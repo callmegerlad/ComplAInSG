@@ -6,6 +6,8 @@ import { IncidentCard, Incident } from "../components/home/IncidentCard";
 import { LocationCard } from "../components/home/LocationCard";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
+import { useAlertContext } from "../components/layout/RootLayout";
+import { formatIncidentType } from "@/lib/api";
 
 const categories: { label: CategoryType; icon: string; colorVar: string; fullWidth?: boolean }[] = [
   { label: 'Cleanliness', icon: 'delete', colorVar: 'var(--accent-primary)' },
@@ -51,6 +53,10 @@ const incidents: Incident[] = [
 export function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
   const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false);
+  const { alerts } = useAlertContext();
+
+  // Show the latest real-time alert (if any)
+  const latestAlert = alerts.length > 0 ? alerts[0] : null;
 
   return (
     <Drawer
@@ -65,11 +71,18 @@ export function HomePage() {
       <div className="flex flex-col min-h-full">
         <TopBar showSearch={true} />
         
-        {/* Alert Banner - Conditional */}
-        <AlertBanner 
-          message="Fight reported" 
-          distance="80m away" 
-        />
+        {/* Alert Banner - Live from WebSocket */}
+        {latestAlert ? (
+          <AlertBanner 
+            message={formatIncidentType(latestAlert.incident_type as any)} 
+            distance={`${latestAlert.radius_m}m radius`}
+          />
+        ) : (
+          <AlertBanner 
+            message="Fight reported" 
+            distance="80m away" 
+          />
+        )}
         
         {/* Scrollable Content */}
         <div className="flex flex-col gap-8 pb-8">

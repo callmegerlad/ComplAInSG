@@ -25,19 +25,22 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: complainsg-backend
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://complainsg:complainsg@postgres:5432/complainsg
+      ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://localhost:8000"]'
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backend:/backend/app
+      - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - complainsg-network
-  
+
   frontend:
     build:
       context: ./frontend
@@ -47,7 +50,10 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://localhost:8000
+      # BACKEND_URL is used by the Vite proxy (server-side, inside Docker network)
+      BACKEND_URL: http://backend:8000
+      # VITE_API_URL is intentionally empty so the client uses relative paths
+      # through the Vite proxy — the browser never talks to the backend directly
     volumes:
       - ./frontend:/app
       - /app/node_modules

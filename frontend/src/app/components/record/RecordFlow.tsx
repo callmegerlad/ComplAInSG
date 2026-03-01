@@ -6,6 +6,14 @@ import {
   DrawerTitle,
 } from "@/app/components/ui/drawer";
 import { CategoryCard, CategoryType } from "@/app/components/home/CategoryCard";
+import {
+  triageIncident,
+  extractFrameFromVideo,
+  formatIncidentType,
+  formatRouting,
+  type TriageResponse,
+} from "@/lib/api";
+import { getCurrentPosition } from "@/lib/geo";
 
 const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
   { label: "Cleanliness", icon: "delete", colorVar: "var(--accent-primary)" },
@@ -40,8 +48,22 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${remainder.toString().padStart(2, "0")}`;
 }
 
+// Severity colour mapping for the results screen
+function severityColor(sev: string): string {
+  switch (sev) {
+    case "CRITICAL":
+      return "#dc2626";
+    case "HIGH":
+      return "#ef4444";
+    case "MEDIUM":
+      return "#f59e0b";
+    default:
+      return "#22c55e";
+  }
+}
+
 export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(initialCategory ? 2 : 1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(initialCategory ? 2 : 1);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(initialCategory);
   const [isRecording, setIsRecording] = useState(false);
   const [isPreparingCamera, setIsPreparingCamera] = useState(false);
@@ -50,6 +72,11 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
   const [description, setDescription] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [recordingDurationSeconds, setRecordingDurationSeconds] = useState(0);
+
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
 
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -199,12 +226,60 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
     }
   }
 
+  // ── Submit report to backend ──────────────────────────────────────
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // 1. Get geolocation
+      const geo = await getCurrentPosition();
+
+      // 2. Extract a frame from the video (if available)
+      let imageDataUrl: string | null = null;
+      if (recordedVideoUrl) {
+        try {
+          imageDataUrl = await extractFrameFromVideo(recordedVideoUrl);
+        } catch {
+          // Non-fatal - continue without image
+          console.warn("Could not extract frame from video");
+        }
+      }
+
+      // 3. Build the description with category context
+      const fullDescription = selectedCategory
+        ? `[${selectedCategory}] ${description || "No additional details provided."}`
+        : description || "No description provided.";
+
+      // 4. Call the triage API
+      const result = await triageIncident({
+        location: "Singapore",
+        description: fullDescription,
+        image_url: imageDataUrl,
+        lat: geo.lat,
+        lng: geo.lng,
+        accuracy_m: geo.accuracy_m,
+      });
+
+      setTriageResult(result);
+      setStep(4);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Submission failed. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   useEffect(() => {
     setSelectedCategory(initialCategory);
     setStep(initialCategory ? 2 : 1);
     setDescription("");
     setIsAnonymous(true);
     setCameraError(null);
+    setSubmitError(null);
+    setTriageResult(null);
     resetRecordingState();
     stopStream();
   }, [initialCategory]);
@@ -233,6 +308,7 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
     };
   }, [recordedVideoUrl]);
 
+  // ── Step 1: Category selection ────────────────────────────────────
   if (step === 1) {
     return (
       <div className="flex h-full flex-col">
@@ -265,6 +341,7 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
     );
   }
 
+  // ── Step 2: Camera + recording ────────────────────────────────────
   if (step === 2) {
     return (
       <div className="relative flex h-full flex-col bg-black text-white">
@@ -383,6 +460,151 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
     );
   }
 
+  // ── Step 4: Triage results ────────────────────────────────────────
+  if (step === 4 && triageResult) {
+    const { final: f } = triageResult;
+    const color = severityColor(f.final_severity);
+
+    return (
+      <div className="flex h-full flex-col gap-4 overflow-y-auto bg-surface-1 p-4">
+        <DrawerHeader className="p-0 pb-2">
+          <div className="mb-4 mx-auto h-1 w-12 rounded-full bg-border-subtle" />
+          <DrawerTitle>Triage Result</DrawerTitle>
+          <DrawerDescription>
+            AI analysis complete. Review the assessment below.
+          </DrawerDescription>
+        </DrawerHeader>
+
+        {/* Severity banner */}
+        <div
+          className="flex items-center gap-3 rounded-xl p-4 text-white"
+          style={{ backgroundColor: color }}
+        >
+          <span className="material-symbols-outlined text-[28px]">
+            {f.final_severity === "CRITICAL" || f.final_severity === "HIGH"
+              ? "warning"
+              : f.final_severity === "MEDIUM"
+                ? "info"
+                : "check_circle"}
+          </span>
+          <div>
+            <p className="text-[14px] font-bold">
+              {f.final_severity} Severity
+            </p>
+            <p className="text-[12px] opacity-90">
+              {formatIncidentType(f.incident_type)} &middot; {Math.round(f.confidence * 100)}% confident
+            </p>
+          </div>
+        </div>
+
+        {/* Routing */}
+        <div className="rounded-xl border border-border-subtle bg-surface-2 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-[18px] text-accent-primary">
+              call
+            </span>
+            <p className="text-[13px] font-bold text-text-primary">Routing</p>
+          </div>
+          <p className="text-[14px] font-bold" style={{ color }}>
+            {formatRouting(f.routing_target)}
+          </p>
+        </div>
+
+        {/* Responder summary */}
+        <div className="rounded-xl border border-border-subtle bg-surface-2 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-[18px] text-accent-primary">
+              description
+            </span>
+            <p className="text-[13px] font-bold text-text-primary">Summary</p>
+          </div>
+          <p className="text-[13px] text-text-secondary leading-relaxed">
+            {f.responder_summary}
+          </p>
+        </div>
+
+        {/* Next steps */}
+        {f.user_next_steps.length > 0 && (
+          <div className="rounded-xl border border-border-subtle bg-surface-2 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[18px] text-accent-primary">
+                checklist
+              </span>
+              <p className="text-[13px] font-bold text-text-primary">
+                Recommended Actions
+              </p>
+            </div>
+            <ul className="space-y-2">
+              {f.user_next_steps.map((s, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-[13px] text-text-secondary"
+                >
+                  <span className="mt-0.5 text-accent-primary font-bold">
+                    {i + 1}.
+                  </span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Follow-up questions */}
+        {f.followup_questions.length > 0 && (
+          <div className="rounded-xl border border-border-subtle bg-surface-2 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[18px] text-accent-primary">
+                help
+              </span>
+              <p className="text-[13px] font-bold text-text-primary">
+                Follow-up Questions
+              </p>
+            </div>
+            <ul className="space-y-2">
+              {f.followup_questions.map((q, i) => (
+                <li
+                  key={i}
+                  className="text-[13px] text-text-secondary flex items-start gap-2"
+                >
+                  <span className="text-accent-primary">&#8226;</span>
+                  {q}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Metadata */}
+        {triageResult.metadata && (
+          <div className="rounded-xl border border-border-subtle bg-surface-2 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-[18px] text-accent-primary">
+                image
+              </span>
+              <p className="text-[13px] font-bold text-text-primary">
+                Image Metadata
+              </p>
+            </div>
+            <p className="text-[13px] text-text-secondary">
+              {triageResult.metadata.metadata_summary}
+            </p>
+          </div>
+        )}
+
+        {/* Done button */}
+        <div className="mt-auto pt-4">
+          <DrawerClose asChild>
+            <button className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95">
+              Done
+            </button>
+          </DrawerClose>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Step 3: Review + submit ───────────────────────────────────────
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto bg-surface-1 p-4">
       <DrawerHeader className="p-0 pb-2">
@@ -464,14 +686,36 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
         </div>
       </button>
 
+      {/* Error message */}
+      {submitError && (
+        <div className="flex items-center gap-2 rounded-xl bg-danger/10 p-3 text-danger">
+          <span className="material-symbols-outlined text-[18px]">error</span>
+          <span className="text-[13px]">{submitError}</span>
+        </div>
+      )}
+
       <div className="mt-auto pt-4">
-        <DrawerClose asChild>
-          <button className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95">
-            Submit Report
-          </button>
-        </DrawerClose>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95 disabled:opacity-60 disabled:active:scale-100 flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-[20px]">
+                progress_activity
+              </span>
+              Analysing...
+            </>
+          ) : (
+            "Submit Report"
+          )}
+        </button>
         <p className="mt-2 text-center text-[11px] text-text-secondary">
-          Will alert people within 250m and notify SPF
+          {isSubmitting
+            ? "AI is triaging your report. This may take up to 30 seconds."
+            : "Will alert people within 250m and notify SPF"}
         </p>
       </div>
     </div>

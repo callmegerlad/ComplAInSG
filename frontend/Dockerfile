@@ -24,6 +24,11 @@ RUN npm ci
 
 COPY . .
 
+# Allow the API URL to be set at build time for production bundles.
+# Defaults to empty string so the SPA uses relative paths (works behind a proxy).
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 # Production stage

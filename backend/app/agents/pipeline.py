@@ -1,4 +1,5 @@
 from typing import Optional, Tuple, Dict, Any
+import base64
 import io
 import requests as http_requests
 from PIL import Image
@@ -24,17 +25,32 @@ def _dms_to_decimal(dms, ref: str) -> float:
     return round(decimal, 6)
 
 
-def extract_image_metadata(image_url: str) -> Dict[str, Any]:
-    """
-    Download the image from image_url, read its EXIF data via Pillow,
-    and return a plain dict with the most incident-relevant fields.
-    Returns an empty dict if the image cannot be fetched or has no EXIF.
-    """
-    meta: Dict[str, Any] = {"source_url": image_url}
-    try:
+def _open_image(image_url: str) -> Image.Image:
+    """Open a PIL Image from either an HTTP(S) URL or a data URL."""
+    if image_url.startswith("data:"):
+        # data:<mime>;base64,<data>
+        header, encoded = image_url.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+        return Image.open(io.BytesIO(image_bytes))
+    else:
         response = http_requests.get(image_url, timeout=10)
         response.raise_for_status()
-        img = Image.open(io.BytesIO(response.content))
+        return Image.open(io.BytesIO(response.content))
+
+
+def extract_image_metadata(image_url: str) -> Dict[str, Any]:
+    """
+    Download the image from image_url (HTTP URL or data URL), read its EXIF
+    data via Pillow, and return a plain dict with the most incident-relevant
+    fields.  Returns a minimal dict if the image cannot be fetched or parsed.
+    NOTE: data URLs are NOT stored in the returned dict to avoid flooding LLM
+    prompts with megabytes of base64.
+    """
+    # Use a short placeholder so we never embed the full data URL in prompts
+    source_label = "data-url" if image_url.startswith("data:") else image_url
+    meta: Dict[str, Any] = {"source_url": source_label}
+    try:
+        img = _open_image(image_url)
 
         raw_exif = img._getexif()  # type: ignore[attr-defined]
         if not raw_exif:

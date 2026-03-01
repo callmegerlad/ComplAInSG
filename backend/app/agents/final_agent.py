@@ -30,6 +30,7 @@ final_agent = Agent(
         "- followup_questions: from text_triage.missing_questions (max 3)\n"
         "- responder_summary: compact and factual (what/where/when/hazards/media)\n"
         "- applied_overrides: from tool output\n"
+        "- However, if the image has nothing relevant to safety concerns, whether listed here or not, give the user 1 question asking whether "
         "Never invent facts not in the inputs.\n"
     ),
     output_type=FinalTriageOutput,

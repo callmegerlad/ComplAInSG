@@ -42,11 +42,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     container_name: complainsg-frontend
     ports:
-      - "3000:3000"
+      - "5173:5173"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:

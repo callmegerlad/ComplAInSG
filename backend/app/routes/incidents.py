@@ -19,13 +19,13 @@ async def triage(req: IncidentRequest):
 
     incident_id = str(uuid4())
 
-    final = await run_triage_pipeline(
+    final, vision, text_triage, metadata = await run_triage_pipeline(
         req.location,
         req.description,
         req.image_url
     )
 
-    radius = severity_radius(final[0].final_severity)
+    radius = severity_radius(final.final_severity)
 
     if radius > 0:
         payload = {
@@ -35,9 +35,9 @@ async def triage(req: IncidentRequest):
             "incident_lat": req.lat,
             "incident_lng": req.lng,
             "radius_m": radius,
-            "incident_type": final[0].incident_type,
-            "severity": final[0].final_severity,
-            "routing": final[0].routing_target
+            "incident_type": final.incident_type,
+            "severity": final.final_severity,
+            "routing": final.routing_target
         }
 
         await router.broadcast_alert(
@@ -50,5 +50,6 @@ async def triage(req: IncidentRequest):
 
     return {
         "incident_id": incident_id,
-        "final": final[0].model_dump()
+        "final": final.model_dump(),
+        "metadata": metadata.model_dump() if metadata else None,
     }

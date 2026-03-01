@@ -50,6 +50,16 @@ class TextTriageOutput(BaseModel):
     missing_questions: List[str] = Field(default_factory=list, max_length=3)
     suggested_actions: List[str] = Field(default_factory=list, max_length=5)
 
+class MetadataOutput(BaseModel):
+    capture_timestamp: Optional[str] = None
+    gps_coordinates: Optional[Dict[str, Any]] = None  # {lat, lng, alt_m}
+    device_make: Optional[str] = None
+    device_model: Optional[str] = None
+    location_matches_report: Optional[bool] = None
+    timestamp_plausibility: Literal["PLAUSIBLE", "SUSPICIOUS", "UNKNOWN"] = "UNKNOWN"
+    flags: List[str] = Field(default_factory=list)
+    metadata_summary: str = ""
+
 class FinalTriageOutput(BaseModel):
     incident_type: IncidentType
     final_severity: Severity

@@ -1,57 +1,25 @@
 import os
-from dotenv import load_dotenv
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, WebSocket
-from app.services.realtime import router
-from app.models.schemas import IncidentRequest
+from app.core.settings import settings
+from app.routes.incidents import incidents_router
+from app.routes.ws_alerts import ws_router
 
+if settings.OPENAI_API_KEY:
+    os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
-load_dotenv()
-
-app = FastAPI(title="Incident Backend", version="0.1.0")
-
-# CORS for your frontend
-origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in origins],
-    allow_credentials=True,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"ok":True}
 
-@app.post("/incidents/process")
-async def process_incident(req: IncidentRequest):
-    image_url=req.image_url
-    description=req.description
-    location=req.location
-
-    data = description
-
-    return data 
-
-@app.websocket("/ws/alerts")
-async def ws_alerts(ws: WebSocket):
-    await router.connect(ws)
-    try:
-        while True:
-            msg = await ws.receive_json()
-
-            if msg.get("type") == "LOCATION_UPDATE":
-                router.update_location(
-                    ws,
-                    float(msg["lat"]),
-                    float(msg["lng"]),
-                    float(msg.get("accuracy_m", 9999))
-                )
-                # Optional: user moved -> check against active incidents (no DB reads)
-                await router.on_location_update_check_nearby(ws)
-
-                await ws.send_json({"type": "ACK"})
-    except Exception:
-        router.disconnect(ws)
+app.include_router(incidents_router)
+app.include_router(ws_router)

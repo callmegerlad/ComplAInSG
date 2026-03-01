@@ -1,6 +1,6 @@
 from uuid import uuid4
 from fastapi import APIRouter
-from app.models.api_schemas import IncidentRequest
+from backend.app.schemas.api_schemas import IncidentRequest
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 

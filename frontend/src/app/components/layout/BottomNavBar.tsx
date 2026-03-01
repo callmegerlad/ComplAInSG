@@ -51,7 +51,7 @@ export function BottomNavBar() {
         </div>
       </div>
       {/* Spacer for fixed bottom nav */}
-      <div className="h-24" />
+      <div className="h-20" />
     </>
   );
 }

@@ -6,8 +6,8 @@ interface AlertBannerProps {
 
 export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
   return (
-    <div className="w-full cursor-pointer bg-surface-1/95 backdrop-blur-md" onClick={onClick}>
-      <div className="relative z-10 flex items-center justify-between bg-[#d93a3a] px-4 py-3 text-white shadow-md">
+    <div className="w-full sticky top-30 z-40 group cursor-pointer" onClick={onClick}>
+      <div className="bg-[#d93a3a] text-white px-4 py-3 flex items-center justify-between shadow-md relative z-10">
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">warning</span>
           <span className="font-semibold text-[13px]">{message} · {distance}</span>

@@ -1,15 +1,19 @@
-import os
-from dotenv import load_dotenv
+"""Application configuration from environment variables."""
+from pydantic_settings import BaseSettings
 
-load_dotenv()
 
-class Settings:
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "gpt-5.1")  # matches notebook
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
-    ALLOWED_ORIGINS: list[str] = [
-        o.strip()
-        for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
-        if o.strip()
-    ]
+class Settings(BaseSettings):
+    OPENAI_API_KEY: str
+
+    MODEL_NAME: str = "gpt-5.1"
+
+    DATABASE_URL: str
+
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
 
 settings = Settings()

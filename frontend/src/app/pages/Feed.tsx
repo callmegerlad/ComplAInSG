@@ -21,7 +21,7 @@ export function FeedPage() {
     <div className="flex flex-col min-h-full">
       <TopBar showSearch={false} />
       
-      <div className="sticky top-[65px] z-10 border-b border-border-subtle bg-surface-1">
+      <div className="sticky top-[65px] z-20 border-b border-border-subtle bg-surface-1">
         <div className="flex items-center justify-between px-4 py-4">
           <h1 className="text-text-primary text-[20px] font-bold">Live Feed</h1>
           <button

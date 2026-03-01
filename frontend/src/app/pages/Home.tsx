@@ -5,12 +5,11 @@ import { IncidentCard, Incident } from "../components/home/IncidentCard";
 import { LocationCard } from "../components/home/LocationCard";
 
 const categories: { label: CategoryType; icon: string; colorVar: string; fullWidth?: boolean }[] = [
-  { label: 'Fight/Assault', icon: 'local_police', colorVar: 'var(--cat-fight)' },
-  { label: 'Harassment', icon: 'report', colorVar: 'var(--cat-harassment)' },
-  { label: 'Crime', icon: 'gavel', colorVar: 'var(--cat-crime)' },
-  { label: 'Transport Fault', icon: 'train', colorVar: 'var(--cat-transport)' },
-  { label: 'Medical Emerg', icon: 'emergency', colorVar: 'var(--cat-medical)', fullWidth: true },
-  { label: 'Fire/Hazard', icon: 'local_fire_department', colorVar: 'var(--cat-fire)', fullWidth: true },
+  { label: 'Cleanliness', icon: 'delete', colorVar: 'var(--accent-primary)' },
+  { label: 'Maintenance', icon: 'build', colorVar: 'var(--accent-primary)' },
+  { label: 'Pests', icon: 'pest_control', colorVar: 'var(--accent-primary)' },
+  { label: 'Roads & Drains', icon: 'add_road', colorVar: 'var(--accent-primary)' },
+  { label: 'Trees & Plants', icon: 'eco', colorVar: 'var(--accent-primary)', fullWidth: true },
 ];
 
 const incidents: Incident[] = [
@@ -90,8 +89,6 @@ export function HomePage() {
             {incidents.map((incident) => (
               <IncidentCard key={incident.id} incident={incident} />
             ))}
-            
-            <LocationCard />
           </div>
         </section>
         

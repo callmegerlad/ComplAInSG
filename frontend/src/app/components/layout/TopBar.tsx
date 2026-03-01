@@ -17,7 +17,7 @@ export function TopBar({ showSearch = true }: TopBarProps) {
           <div className="flex items-center gap-0">
              <span className="font-bold text-lg text-text-primary">Compl</span>
              <span className="font-bold text-lg text-accent-primary">AI</span>
-             <span className="font-bold text-lg text-text-primary">n</span>
+             <span className="font-bold text-lg text-text-primary">nSG</span>
           </div>
         </div>
         

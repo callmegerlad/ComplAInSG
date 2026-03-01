@@ -1,8 +1,8 @@
 import { TopBar } from "../components/layout/TopBar";
-import { IncidentCard } from "../components/home/IncidentCard";
+import { IncidentCard, Incident } from "../components/home/IncidentCard";
 import { useState } from "react";
 
-const incidents = [
+const incidents: Incident[] = [
   {
     id: '1',
     category: 'Fight/Assault',
@@ -39,11 +39,11 @@ export function MapPage() {
   const [activeFilter, setActiveFilter] = useState('All');
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden pb-24">
+    <div className="flex min-h-full flex-col">
       <TopBar showSearch={true} />
       
       {/* Map Layer - Placeholder */}
-      <div className="relative w-full h-[50vh] bg-bg-secondary flex items-center justify-center shrink-0">
+      <div className="relative h-[42vh] min-h-64 w-full shrink-0 bg-bg-secondary flex items-center justify-center">
         <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=Singapore&zoom=12&size=600x300&sensor=false')] bg-cover opacity-50 grayscale"></div>
         <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative">
@@ -61,7 +61,7 @@ export function MapPage() {
       </div>
       
       {/* Content Layer */}
-      <div className="flex-1 bg-surface-1 rounded-t-2xl -mt-4 relative z-10 flex flex-col shadow-[0_-4px_20px_rgba(0,0,0,0.1)] overflow-hidden">
+      <div className="relative z-10 -mt-4 flex min-h-0 flex-1 flex-col rounded-t-2xl bg-surface-1 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
         {/* Handle */}
         <div className="w-12 h-1 bg-border-subtle rounded-full mx-auto mt-3 mb-1 shrink-0" />
         
@@ -84,7 +84,7 @@ export function MapPage() {
         </div>
         
         {/* List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-28 space-y-3">
            {incidents.map(incident => (
              <IncidentCard key={incident.id} incident={incident} />
            ))}

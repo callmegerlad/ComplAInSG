@@ -3,12 +3,11 @@ import { DrawerClose, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter
 import { CategoryCard, CategoryType } from "@/app/components/home/CategoryCard";
 
 const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
-  { label: 'Fight/Assault', icon: 'local_police', colorVar: 'var(--cat-fight)' },
-  { label: 'Harassment', icon: 'report', colorVar: 'var(--cat-harassment)' },
-  { label: 'Crime', icon: 'gavel', colorVar: 'var(--cat-crime)' },
-  { label: 'Transport Fault', icon: 'train', colorVar: 'var(--cat-transport)' },
-  { label: 'Medical Emerg', icon: 'emergency', colorVar: 'var(--cat-medical)' },
-  { label: 'Fire/Hazard', icon: 'local_fire_department', colorVar: 'var(--cat-fire)' },
+  { label: 'Cleanliness', icon: 'delete', colorVar: 'var(--accent-primary)' },
+  { label: 'Maintenance', icon: 'build', colorVar: 'var(--accent-primary)' },
+  { label: 'Pests', icon: 'pest_control', colorVar: 'var(--accent-primary)' },
+  { label: 'Roads & Drains', icon: 'add_road', colorVar: 'var(--accent-primary)' },
+  { label: 'Trees & Plants', icon: 'eco', colorVar: 'var(--accent-primary)' },
 ];
 
 export function RecordFlow() {

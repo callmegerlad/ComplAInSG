@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
 
-export type CategoryType = 'Fight/Assault' | 'Harassment' | 'Crime' | 'Transport Fault' | 'Medical Emerg' | 'Fire/Hazard';
+export type CategoryType =
+  | 'Cleanliness'
+  | 'Maintenance'
+  | 'Pests'
+  | 'Roads & Drains'
+  | 'Trees & Plants';
 
 interface CategoryCardProps {
   label: string;
@@ -14,10 +19,12 @@ export function CategoryCard({ label, icon, colorVar, fullWidth, onClick }: Cate
   return (
     <button
       onClick={onClick}
-      className={cn(
-        "flex rounded-xl border border-border-subtle bg-surface-1 p-4 shadow-card active:scale-95 transition-transform group text-left",
-        fullWidth ? "col-span-2 flex-row items-center gap-3" : "flex-col items-start gap-3"
-      )}
+      className={
+        cn(
+          "flex rounded-xl border border-border-subtle bg-surface-1 p-4 shadow-card active:scale-95 transition-transform group text-left",
+          fullWidth ? "col-span-2 flex-row items-center gap-3" : "flex-col items-start gap-3"
+        )
+      }
     >
       <div 
         className="p-2 rounded-lg transition-colors group-active:text-white flex items-center justify-center aspect-square"

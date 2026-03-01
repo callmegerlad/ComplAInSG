@@ -12,6 +12,7 @@ export interface Incident {
   title: string;
   summary: string;
   timestamp: string;
+  status?: string;
   imageUrl?: string;
   responders: number;
 }

@@ -1,42 +1,19 @@
 import { TopBar } from "../components/layout/TopBar";
-import { IncidentCard, Incident } from "../components/home/IncidentCard";
+import { IncidentCard } from "../components/home/IncidentCard";
+import { IncidentFilters } from "../components/incidents/IncidentFilters";
 import { useState } from "react";
-
-const incidents: Incident[] = [
-  {
-    id: '1',
-    category: 'Fight/Assault',
-    categoryColor: 'var(--cat-fight)',
-    categoryIcon: 'local_police',
-    severity: 'High',
-    location: 'Ang Mo Kio Ave 3',
-    distance: '80m',
-    title: 'Fight reported at Block 423',
-    summary: 'Content verified by AI. Two individuals involved in a physical altercation near the void deck.',
-    timestamp: '2 min ago',
-    responders: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1563266914-94073574828f?q=80&w=200&auto=format&fit=crop'
-  },
-  {
-    id: '2',
-    category: 'Transport Fault',
-    categoryColor: 'var(--cat-transport)',
-    categoryIcon: 'train',
-    severity: 'Medium',
-    location: 'Orchard MRT',
-    distance: '1.2km',
-    title: 'Escalator Breakdown',
-    summary: 'Escalator B at Exit 3 is currently non-functional. Technicians have been dispatched.',
-    timestamp: '15 min ago',
-    responders: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1471623320832-752e8bbf8413?q=80&w=200&auto=format&fit=crop'
-  }
-];
-
-const categories = ['All', 'Fight', 'Harassment', 'Crime', 'Transport', 'Medical', 'Fire'];
+import {
+  defaultIncidentFilters,
+  filterIncidents,
+  getIncidentCategories,
+  incidents,
+} from "@/lib/incidents";
 
 export function MapPage() {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [filters, setFilters] = useState(defaultIncidentFilters);
+  const [showFilters, setShowFilters] = useState(false);
+  const filteredIncidents = filterIncidents(incidents, filters);
+  const categories = getIncidentCategories(incidents);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -65,29 +42,52 @@ export function MapPage() {
         {/* Handle */}
         <div className="w-12 h-1 bg-border-subtle rounded-full mx-auto mt-3 mb-1 shrink-0" />
         
-        {/* Filter Chips */}
-        <div className="flex overflow-x-auto px-4 py-3 gap-2 no-scrollbar shrink-0">
-          {categories.map(cat => (
+        <div className="shrink-0 border-b border-border-subtle px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-[18px] font-bold text-text-primary">Nearby Incidents</h1>
+              <p className="text-[12px] text-text-secondary">
+                Filter by proximity, severity, and incident type
+              </p>
+            </div>
             <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`
-                px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap border transition-colors
-                ${activeFilter === cat 
-                  ? 'bg-accent-subtle border-accent-primary text-accent-primary' 
-                  : 'bg-transparent border-border-subtle text-text-secondary hover:bg-surface-2'}
-              `}
+              type="button"
+              onClick={() => setShowFilters((current) => !current)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border-subtle text-accent-primary transition-colors hover:bg-surface-2"
+              aria-label="Toggle map filters"
             >
-              {cat}
+              <span className="material-symbols-outlined text-[20px]">tune</span>
             </button>
-          ))}
+          </div>
+          {showFilters && (
+            <div className="pt-3">
+              <IncidentFilters
+                filters={filters}
+                categories={categories}
+                onProximityChange={(proximity) =>
+                  setFilters((current) => ({ ...current, proximity }))
+                }
+                onSeverityChange={(severity) =>
+                  setFilters((current) => ({ ...current, severity }))
+                }
+                onCategoryChange={(category) =>
+                  setFilters((current) => ({ ...current, category }))
+                }
+              />
+            </div>
+          )}
         </div>
         
         {/* List */}
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-28 space-y-3">
-           {incidents.map(incident => (
+           {filteredIncidents.map((incident) => (
              <IncidentCard key={incident.id} incident={incident} />
            ))}
+           {filteredIncidents.length === 0 && (
+             <div className="py-10 text-center text-text-secondary">
+               No incidents match the selected filters.
+             </div>
+           )}
         </div>
       </div>
     </div>

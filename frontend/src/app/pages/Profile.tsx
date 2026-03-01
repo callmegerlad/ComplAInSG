@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { TopBar } from "../components/layout/TopBar";
+import { applyTheme, getPreferredTheme } from "@/lib/theme";
 
 export function ProfilePage() {
+  const [isDarkMode, setIsDarkMode] = useState(() => getPreferredTheme() === "dark");
+
   return (
     <div className="flex flex-col min-h-full pb-8">
       <TopBar showSearch={false} />
@@ -90,16 +94,32 @@ export function ProfilePage() {
         ))}
       </div>
       
-      <div className="mx-4 mt-6 flex items-center justify-between p-4 rounded-xl bg-surface-1 border border-border-subtle">
+      <button
+        type="button"
+        onClick={() => {
+          const nextIsDark = !isDarkMode;
+          setIsDarkMode(nextIsDark);
+          applyTheme(nextIsDark ? "dark" : "light");
+        }}
+        className="mx-4 mt-6 flex items-center justify-between p-4 rounded-xl bg-surface-1 border border-border-subtle transition-colors hover:bg-surface-2"
+        aria-pressed={isDarkMode}
+      >
         <div className="flex items-center gap-3">
            <span className="material-symbols-outlined text-[20px] text-text-secondary">dark_mode</span>
            <span className="text-[14px] text-text-primary">Dark Mode</span>
         </div>
-        {/* Toggle Switch Placeholder */}
-        <div className="w-12 h-6 bg-border-subtle rounded-full relative">
-           <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm"></div>
+        <div
+          className={`relative h-6 w-12 rounded-full transition-colors ${
+            isDarkMode ? "bg-accent-primary" : "bg-border-subtle"
+          }`}
+        >
+          <div
+            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+              isDarkMode ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
         </div>
-      </div>
+      </button>
     </div>
   );
 }

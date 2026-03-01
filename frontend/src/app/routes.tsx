@@ -3,6 +3,7 @@ import { RootLayout } from "./components/layout/RootLayout";
 import { HomePage } from "./pages/Home";
 import { FeedPage } from "./pages/Feed";
 import { MapPage } from "./pages/MapPage";
+import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
 
 export const router = createBrowserRouter([
@@ -13,6 +14,7 @@ export const router = createBrowserRouter([
       { index: true, Component: HomePage },
       { path: "feed", Component: FeedPage },
       { path: "map", Component: MapPage },
+      { path: "notifications", Component: NotificationsPage },
       { path: "profile", Component: ProfilePage },
       { path: "*", Component: () => <div>Not Found</div> },
     ],

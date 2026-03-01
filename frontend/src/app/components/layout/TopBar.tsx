@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Link } from "react-router";
 
 interface TopBarProps {
   showSearch?: boolean;
@@ -22,13 +23,21 @@ export function TopBar({ showSearch = true }: TopBarProps) {
         </div>
         
         <div className="flex items-center gap-2 justify-end">
-           <button className="relative flex items-center justify-center rounded-full h-10 w-10 bg-surface-2 text-text-secondary">
+           <Link
+             to="/notifications"
+             className="relative flex items-center justify-center rounded-full h-10 w-10 bg-surface-2 text-text-secondary"
+             aria-label="Open notifications"
+           >
              <span className="material-symbols-outlined text-[20px]">notifications</span>
              <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-danger"></span>
-           </button>
-           <div className="h-9 w-9 rounded-full bg-accent-subtle border-2 border-accent-primary/20 flex items-center justify-center text-accent-primary font-bold text-[13px]">
+           </Link>
+           <Link
+             to="/profile"
+             className="h-9 w-9 rounded-full bg-accent-subtle border-2 border-accent-primary/20 flex items-center justify-center text-accent-primary font-bold text-[13px]"
+             aria-label="Open profile"
+           >
               JD
-           </div>
+           </Link>
         </div>
       </div>
       

@@ -31,6 +31,14 @@
   --success: #2EAD76;
   --success-subtle: #D4F3E7;
 
+  --report-surface: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(232,238,248,0.98) 100%);
+  --report-halo: rgba(80, 125, 188, 0.10);
+  --report-ring-strong: rgba(80, 125, 188, 0.20);
+  --report-ring-soft: rgba(80, 125, 188, 0.15);
+  --report-shell-shadow: 0 8px 32px rgba(80, 125, 188, 0.16), 0 2px 8px rgba(27, 42, 65, 0.08);
+  --report-button-gradient: linear-gradient(145deg, #6A95CE, #507DBC);
+  --report-button-shadow: 0 12px 30px rgba(80, 125, 188, 0.40);
+
   /* Category Colors (Fixed) */
   --cat-fight: #D93A3A;
   --cat-harassment: #9B59D0;
@@ -71,6 +79,14 @@
   
   --success: #35C483;
   --success-subtle: #0E3324;
+
+  --report-surface: linear-gradient(180deg, rgba(25,35,52,0.96) 0%, rgba(20,30,46,0.98) 100%);
+  --report-halo: rgba(106, 149, 206, 0.18);
+  --report-ring-strong: rgba(106, 149, 206, 0.34);
+  --report-ring-soft: rgba(106, 149, 206, 0.22);
+  --report-shell-shadow: 0 12px 36px rgba(0, 0, 0, 0.38), 0 2px 10px rgba(0, 0, 0, 0.28);
+  --report-button-gradient: linear-gradient(145deg, #7CA6DD, #507DBC);
+  --report-button-shadow: 0 14px 34px rgba(80, 125, 188, 0.42);
 }
 
 @theme inline {

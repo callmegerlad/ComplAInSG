@@ -17,6 +17,7 @@ const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
 
 type RecordFlowProps = {
   initialCategory?: CategoryType | null;
+  startAtCamera?: boolean;
 };
 
 function getSupportedMimeType(): string {
@@ -40,8 +41,8 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${remainder.toString().padStart(2, "0")}`;
 }
 
-export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(initialCategory ? 2 : 1);
+export function RecordFlow({ initialCategory = null, startAtCamera = false }: RecordFlowProps) {
+  const [step, setStep] = useState<1 | 2 | 3>(initialCategory || startAtCamera ? 2 : 1);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(initialCategory);
   const [isRecording, setIsRecording] = useState(false);
   const [isPreparingCamera, setIsPreparingCamera] = useState(false);
@@ -201,13 +202,13 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
 
   useEffect(() => {
     setSelectedCategory(initialCategory);
-    setStep(initialCategory ? 2 : 1);
+    setStep(initialCategory || startAtCamera ? 2 : 1);
     setDescription("");
     setIsAnonymous(true);
     setCameraError(null);
     resetRecordingState();
     stopStream();
-  }, [initialCategory]);
+  }, [initialCategory, startAtCamera]);
 
   useEffect(() => {
     if (step === 2) {
@@ -301,18 +302,22 @@ export function RecordFlow({ initialCategory = null }: RecordFlowProps) {
         </div>
 
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
-          <button
-            type="button"
-            onClick={() => {
-              stopRecording();
-              setStep(1);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          <DrawerClose asChild={startAtCamera && !selectedCategory}>
+            <button
+              type="button"
+              onClick={() => {
+                stopRecording();
+                if (!startAtCamera || selectedCategory) {
+                  setStep(1);
+                }
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </DrawerClose>
           <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
-            {selectedCategory}
+            {selectedCategory ?? "Report"}
           </div>
           <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
             {isRecording ? formatDuration(recordingDurationSeconds) : "Ready"}

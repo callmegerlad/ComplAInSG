@@ -45,7 +45,7 @@ export function MapPage() {
         <div className="shrink-0 border-b border-border-subtle px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-[18px] font-bold text-text-primary">Nearby Incidents</h1>
+              <h1 className="text-[18px] font-bold text-text-primary">All Incidents</h1>
               <p className="text-[12px] text-text-secondary">
                 Filter by proximity, severity, and incident type
               </p>

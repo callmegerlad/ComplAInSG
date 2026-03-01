@@ -7,7 +7,7 @@ interface TopBarProps {
 
 export function TopBar({ showSearch = true }: TopBarProps) {
   return (
-    <div className="sticky top-0 z-10 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle">
+    <div className="sticky top-0 z-30 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle">
       <div className="flex items-center p-4 pb-2 justify-between">
         <div className="flex shrink-0 items-center gap-2">
           {/* Logo Icon Mark */}

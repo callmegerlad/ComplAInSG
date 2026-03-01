@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/app/components/ui/drawer";
-import { useState } from "react";
 import { RecordFlow } from "@/app/components/record/RecordFlow";
 
 export function BottomNavBar() {
@@ -41,13 +40,13 @@ export function BottomNavBar() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-surface-1/95 backdrop-blur-md px-4 pb-6 pt-2 z-20">
         <div className="flex gap-2 items-end">
           <NavItem path="/" icon="home" label="Home" />
-          <NavItem path="/feed" icon="list" label="Feed" />
+          <NavItem path="/map" icon="map" label="Map" />
           
           <div className="flex flex-1 flex-col items-center justify-center -mt-8 relative z-30">
              <RecordFlowTrigger />
           </div>
 
-          <NavItem path="/map" icon="map" label="Map" />
+          <NavItem path="/notifications" icon="notifications" label="Alerts" />
           <NavItem path="/profile" icon="person" label="Profile" />
         </div>
       </div>

@@ -3,6 +3,7 @@ name: complainsg
 services:
   postgres:
     image: postgres:15-alpine
+    container_name: complainsg-db
     environment:
       POSTGRES_USER: complainsg
       POSTGRES_PASSWORD: complainsg
@@ -16,13 +17,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - complainsg-network
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: complainsg-backend
     environment:
-      DATABASE_URL: postgres://complainsg:complainsg@postgres:5432/complainsg
+      DATABASE_URL: postgresql://complainsg:complainsg@postgres:5432/complainsg
     ports:
       - "8000:8000"
     depends_on:
@@ -31,6 +35,12 @@ services:
     volumes:
       - ./backend:/backend/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - complainsg-network
+
+networks:
+  complainsg-network:
+    driver: bridge
 
 volumes:
   postgres_data:

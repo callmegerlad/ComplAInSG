@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Home Dashboard - OneService SG</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#507DBC",
+                        "background-light": "#f8f9fa",
+                        "background-dark": "#1a1c1e",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --primary-accent: #507DBC;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<div class="sticky top-0 z-10 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800">
+<div class="flex items-center p-4 pb-2 justify-between">
+<div class="flex size-10 shrink-0 items-center">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-[var(--primary-accent)]/20" data-alt="User profile avatar of a resident" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCHimSOmobbsiOSSmygVPVzvuUyWdWmSIqeZ1DZd5iwkX2PlGu73vdMJhI_bzXL1hXkIvsGC6SX31tB-exbxaT0FPMAwChiVo35QIFps1eGM41spCt0e4Rf79GoI1N6LBwOU-U-4vFciyQEVHm11t2lmnvJUzP-ogPumNBE2eeMlj3LYsBuRXLefVL03ppo0pX1imA9s5JOgO0BOHNe_uuFel5m_vkuzLprY8sDqBosemRcL76D6siUvEYeAPto7R8NClBDpCqnerE");'></div>
+</div>
+<div class="flex-1 px-4">
+<p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Welcome back</p>
+<h2 class="text-[var(--primary-accent)] dark:text-blue-400 text-lg font-bold leading-tight tracking-tight">Good Morning, Singapore</h2>
+</div>
+<div class="flex w-10 items-center justify-end">
+<button class="relative flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-[var(--primary-accent)]"></span>
+</button>
+</div>
+</div>
+<div class="px-4 py-3">
+<label class="flex flex-col w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-12 shadow-sm border border-[var(--primary-accent)]/30 focus-within:border-[var(--primary-accent)] transition-colors overflow-hidden">
+<div class="text-slate-400 dark:text-slate-500 flex items-center justify-center pl-4 bg-white dark:bg-slate-800">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-white dark:bg-slate-800 h-full placeholder:text-slate-400 px-4 pl-2 text-base font-normal" placeholder="Search for issues or locations" value=""/>
+</div>
+</label>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto pb-24">
+<div class="flex items-center justify-between px-4 pt-6 pb-3">
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight">Report an Issue</h2>
+<a class="text-[var(--primary-accent)] text-sm font-semibold" href="#">View all</a>
+</div>
+<div class="grid grid-cols-2 gap-3 px-4">
+<div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4 items-start shadow-sm active:scale-95 transition-transform group">
+<div class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] p-2 rounded-lg group-active:bg-[var(--primary-accent)] group-active:text-white transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Cleanliness</h2>
+</div>
+<div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4 items-start shadow-sm active:scale-95 transition-transform group">
+<div class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] p-2 rounded-lg group-active:bg-[var(--primary-accent)] group-active:text-white transition-colors">
+<span class="material-symbols-outlined">build</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Maintenance</h2>
+</div>
+<div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4 items-start shadow-sm active:scale-95 transition-transform group">
+<div class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] p-2 rounded-lg group-active:bg-[var(--primary-accent)] group-active:text-white transition-colors">
+<span class="material-symbols-outlined">pest_control</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Pests</h2>
+</div>
+<div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4 items-start shadow-sm active:scale-95 transition-transform group">
+<div class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] p-2 rounded-lg group-active:bg-[var(--primary-accent)] group-active:text-white transition-colors">
+<span class="material-symbols-outlined">add_road</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Roads &amp; Drains</h2>
+</div>
+<div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 p-4 items-start shadow-sm col-span-2 active:scale-95 transition-transform group">
+<div class="flex items-center gap-3">
+<div class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] p-2 rounded-lg group-active:bg-[var(--primary-accent)] group-active:text-white transition-colors">
+<span class="material-symbols-outlined">eco</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Trees &amp; Plants</h2>
+</div>
+</div>
+</div>
+<div class="px-4 pt-8 pb-3">
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight">Recent Reports</h2>
+</div>
+<div class="px-4 space-y-4">
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">
+<div class="p-4 flex gap-4">
+<div class="size-20 bg-slate-100 dark:bg-slate-700 rounded-lg flex-shrink-0 bg-cover bg-center" data-alt="A photo of a littering issue in a residential area" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB0KSVr_OKnT6gm4Q2I_Rsfnqp1mayOni87ncok8HewkMh3DvVEKEftE6G9MfBoo_qPnNoSo0lz8Z6xt0QmL9sv1I52jmyW2Ty52sA5tbGAvLaAV5pvqWaMCmBNxccgUPTLMNGa3NI6p-N0e5DZzx0CGb9IlGZM_et3xY_XO6CgHLwP6-tSNnTJxITmtH_O_7pYPy6bsM-B0qlo9zKH5n-i0o7XPk8fq1NWSxdJEogUvghL6gcQ72M06xJyls6h1Gigy4VnFCc6Rt8');"></div>
+<div class="flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-[var(--primary-accent)]/10 text-[var(--primary-accent)] dark:bg-[var(--primary-accent)]/20 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">In Progress</span>
+<span class="text-slate-400 text-[10px] font-medium">REF: #SG-8821</span>
+</div>
+<h3 class="text-slate-900 dark:text-slate-100 font-bold text-sm">Littering at Block 423</h3>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Ang Mo Kio Ave 3</p>
+</div>
+<p class="text-slate-400 text-[10px] italic">Reported on 24 May, 09:15 AM</p>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">
+<div class="h-32 bg-slate-200 dark:bg-slate-700 bg-cover bg-center" data-alt="Map of central Singapore area" data-location="Singapore" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAArmWGZ89fdBCOL3QheRfLPkw2Uyu14pFKalCHHKLgcR9gjT75_wHvVQtTtj2OFHxMTrncUz0QTIzYaapGUMzbQ8VGA2GV4bVQrmkf4o9eHD9_twfRR76kWCKg2t1xUlyq0t_1IWxfnH6bwWe3EOsj6VZq7Aaq8crEitsieIdgguvmJO9bpfSIvXhsIGAj5tkD1lIpevRcCnwSiM1hOHucQBUL2qxneLvDccJGjXWkvzUz7P8u2fli2QcDnh1rpGY56DeMfGRfqOs');"></div>
+<div class="p-4 flex items-center justify-between">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Current Location</p>
+<h3 class="text-slate-900 dark:text-slate-100 font-bold text-sm">Near Marina Bay Sands</h3>
+</div>
+<button class="bg-[var(--primary-accent)] hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Update</button>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md px-4 pb-6 pt-2 z-20">
+<div class="flex gap-2">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-[var(--primary-accent)]" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined fill-1">home</span>
+</div>
+<p class="text-[10px] font-bold leading-normal tracking-tight">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">assignment</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-tight">Reports</p>
+</a>
+<div class="flex flex-1 flex-col items-center justify-center -mt-8">
+<button class="bg-[var(--primary-accent)] text-white h-14 w-14 rounded-full shadow-lg shadow-[var(--primary-accent)]/30 flex items-center justify-center active:scale-90 transition-transform">
+<span class="material-symbols-outlined !text-3xl">add</span>
+</button>
+<p class="text-[10px] font-medium leading-normal tracking-tight mt-1 text-slate-400">Report</p>
+</div>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">location_on</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-tight">Map</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">person</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-tight">Profile</p>
+</a>
+</div>
+</div>
+</div>
+
+</body></html>

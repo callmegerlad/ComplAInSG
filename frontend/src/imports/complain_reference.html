@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ComplAIn - Community Safety Network</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#507DBC",
+          "primary-dark": "#3F6AA8",
+          "primary-subtle": "#D8E4F4",
+          "slate-navy": "#1B2A41",
+          "civic-amber": "#E8A838",
+          "danger": "#D93A3A",
+          "success": "#2EAD76",
+          "background-light": "#F4F6FA",
+          "background-dark": "#0E1621",
+          "surface-dark": "#192334",
+        },
+        fontFamily: {
+          "display": ["DM Sans", "sans-serif"],
+          "mono": ["DM Mono", "monospace"],
+        },
+        borderRadius: {
+          "DEFAULT": "0.375rem",
+          "lg": "0.75rem",
+          "xl": "1rem",
+          "2xl": "1.25rem",
+          "full": "9999px"
+        },
+      },
+    },
+  }
+</script>
+<style type="text/tailwindcss">
+  :root {
+    --primary-accent: #507DBC;
+    --primary-subtle: #D8E4F4;
+    --civic-amber: #E8A838;
+    --danger: #D93A3A;
+    --success: #2EAD76;
+  }
+  body {
+    min-height: max(884px, 100dvh);
+  }
+  .dark body {
+    --primary-subtle: #1C3255;
+  }
+  .category-fight { --cat-color: #D93A3A; }
+  .category-harassment { --cat-color: #9B59D0; }
+  .category-crime { --cat-color: #C0392B; }
+  .category-transport { --cat-color: #E8A838; }
+  .category-medical { --cat-color: #E05C2A; }
+  .category-fire { --cat-color: #E07A2A; }
+  .pulse-ring {
+    animation: pulse-ring 1.8s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0; }
+  }
+  .record-pulse {
+    animation: record-glow 2s ease-in-out infinite;
+  }
+  @keyframes record-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(217,58,58,0.4); }
+    50% { box-shadow: 0 0 32px rgba(217,58,58,0.7); }
+  }
+</style>
+</head>
+
+<!-- ============================================================
+     SCREEN 1: HOME / REPORT SCREEN (Default Tab)
+     This is what loads first — Report categories are prominent
+     ============================================================ -->
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden max-w-[390px] mx-auto">
+
+  <!-- ── TOP BAR ── -->
+  <!-- Height: 64px. White bg (light) / surface-dark (dark). Bottom border: #D4D9E5 / #263549 1px -->
+  <div class="sticky top-0 z-10 bg-white/90 dark:bg-[#192334]/95 backdrop-blur-md border-b border-slate-100 dark:border-[#263549]">
+    <div class="flex items-center px-4 pt-4 pb-2 justify-between">
+      <!-- Logo mark: #507DBC icon (shield/speech bubble) + "Compl" in #1B2A41 + "AI" in #507DBC + "n" in #1B2A41 -->
+      <div class="flex items-center gap-2">
+        <!-- Icon mark: speech bubble with pulse wave, 28px, #507DBC -->
+        <div class="w-8 h-8 bg-[#507DBC] rounded-lg flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-white !text-lg">crisis_alert</span>
+        </div>
+        <!-- Wordmark: DM Sans Bold 18px -->
+        <span class="font-display font-bold text-lg tracking-tight">
+          <span class="text-[#1B2A41] dark:text-[#E8EDF5]">Compl</span><span class="text-[#507DBC]">AI</span><span class="text-[#1B2A41] dark:text-[#E8EDF5]">n</span>
+        </span>
+      </div>
+      <!-- Right: notification bell + unread dot -->
+      <div class="flex items-center gap-2">
+        <button class="relative flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-[#1F2D40] text-slate-600 dark:text-slate-300">
+          <span class="material-symbols-outlined">notifications</span>
+          <!-- Unread dot: 8px circle #D93A3A, absolute top-2 right-2 -->
+          <span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-[#D93A3A]"></span>
+        </button>
+        <!-- Avatar: 32px circle, #D8E4F4 bg, #507DBC initials, DM Sans Bold 13px -->
+        <div class="w-9 h-9 rounded-full bg-[#D8E4F4] dark:bg-[#1C3255] flex items-center justify-center border-2 border-[#507DBC]/20">
+          <span class="text-[#507DBC] font-bold text-xs font-display">AJ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search bar: same as OneService pattern, border #507DBC/30, focus border #507DBC -->
+    <div class="px-4 py-3">
+      <label class="flex flex-col w-full">
+        <div class="flex w-full flex-1 items-stretch rounded-xl h-12 shadow-sm border border-[#507DBC]/30 focus-within:border-[#507DBC] transition-colors overflow-hidden">
+          <div class="text-slate-400 dark:text-slate-500 flex items-center justify-center pl-4 bg-white dark:bg-[#1F2D40]">
+            <span class="material-symbols-outlined">search</span>
+          </div>
+          <input class="form-input flex w-full min-w-0 flex-1 text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-white dark:bg-[#1F2D40] h-full placeholder:text-slate-400 px-4 pl-2 text-base font-normal font-display" placeholder="Search incidents or locations" value=""/>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── SCROLLABLE CONTENT ── -->
+  <div class="flex-1 overflow-y-auto pb-24">
+
+    <!-- ACTIVE ALERT BANNER (shows when incident < 200m away) -->
+    <!-- Height: 52px. bg #D93A3A. Progress bar depletes over 8s (auto-dismiss) -->
+    <div class="bg-[#D93A3A] px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-white !text-lg">warning</span>
+        <!-- DM Sans SemiBold 13px, white -->
+        <span class="text-white font-semibold text-sm font-display">Fight reported · 80m away</span>
+      </div>
+      <!-- "View →" right-aligned, DM Sans SemiBold 12px, white 80% opacity -->
+      <button class="text-white/80 font-semibold text-xs font-display flex items-center gap-1">
+        View <span class="material-symbols-outlined !text-base">chevron_right</span>
+      </button>
+    </div>
+    <!-- 2px progress bar below banner, white 40% opacity, depletes left→right over 8s -->
+    <div class="h-0.5 bg-white/20"><div class="h-full bg-white/40 w-3/4 transition-all duration-1000"></div></div>
+
+    <!-- ── SECTION: REPORT AN INCIDENT ── -->
+    <!-- Section header: DM Sans Bold 20px #1B2A41/dark:#E8EDF5, "View all" link #507DBC SemiBold 14px -->
+    <div class="flex items-center justify-between px-4 pt-6 pb-3">
+      <h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight font-display">Report an Incident</h2>
+      <a class="text-[#507DBC] text-sm font-semibold font-display" href="#">View all</a>
+    </div>
+
+    <!-- CATEGORY GRID: 2 columns, 12px gap, 16px horizontal padding -->
+    <!-- Each card: rounded-xl, border #D4D9E5 / dark:#263549, bg white/dark:#192334, p-4, shadow-sm -->
+    <!-- Active/tap state: scale-95 transform transition -->
+    <div class="grid grid-cols-2 gap-3 px-4">
+
+      <!-- FIGHT / ASSAULT — Category color: #D93A3A -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm active:scale-95 transition-transform cursor-pointer group">
+        <!-- Icon container: bg #D93A3A/10, icon #D93A3A, p-2 rounded-lg. Tap: bg #D93A3A icon white -->
+        <div class="bg-[#D93A3A]/10 text-[#D93A3A] p-2 rounded-lg group-active:bg-[#D93A3A] group-active:text-white transition-colors">
+          <span class="material-symbols-outlined">local_police</span>
+        </div>
+        <!-- Label: DM Sans Bold 14px, Text Primary -->
+        <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Fight / Assault</h2>
+      </div>
+
+      <!-- HARASSMENT — Category color: #9B59D0 -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm active:scale-95 transition-transform cursor-pointer group">
+        <div class="bg-[#9B59D0]/10 text-[#9B59D0] p-2 rounded-lg group-active:bg-[#9B59D0] group-active:text-white transition-colors">
+          <span class="material-symbols-outlined">report</span>
+        </div>
+        <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Harassment</h2>
+      </div>
+
+      <!-- CRIME — Category color: #C0392B -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm active:scale-95 transition-transform cursor-pointer group">
+        <div class="bg-[#C0392B]/10 text-[#C0392B] p-2 rounded-lg group-active:bg-[#C0392B] group-active:text-white transition-colors">
+          <span class="material-symbols-outlined">gavel</span>
+        </div>
+        <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Crime</h2>
+      </div>
+
+      <!-- TRANSPORT FAULT — Category color: #E8A838 (Civic Amber) -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm active:scale-95 transition-transform cursor-pointer group">
+        <div class="bg-[#E8A838]/10 text-[#E8A838] p-2 rounded-lg group-active:bg-[#E8A838] group-active:text-white transition-colors">
+          <span class="material-symbols-outlined">train</span>
+        </div>
+        <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Transport Fault</h2>
+      </div>
+
+      <!-- MEDICAL EMERGENCY — Category color: #E05C2A — Full width (col-span-2) -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm col-span-2 active:scale-95 transition-transform cursor-pointer group">
+        <div class="flex items-center gap-3">
+          <div class="bg-[#E05C2A]/10 text-[#E05C2A] p-2 rounded-lg group-active:bg-[#E05C2A] group-active:text-white transition-colors">
+            <span class="material-symbols-outlined">emergency</span>
+          </div>
+          <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Medical Emergency</h2>
+        </div>
+      </div>
+
+      <!-- FIRE / HAZARD — Category color: #E07A2A — Full width (col-span-2) -->
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] p-4 items-start shadow-sm col-span-2 active:scale-95 transition-transform cursor-pointer group">
+        <div class="flex items-center gap-3">
+          <div class="bg-[#E07A2A]/10 text-[#E07A2A] p-2 rounded-lg group-active:bg-[#E07A2A] group-active:text-white transition-colors">
+            <span class="material-symbols-outlined">local_fire_department</span>
+          </div>
+          <h2 class="text-slate-900 dark:text-slate-100 text-sm font-bold font-display">Fire / Hazard</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION: LIVE NEARBY INCIDENTS ── -->
+    <div class="px-4 pt-8 pb-3">
+      <h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight font-display">Live Nearby</h2>
+    </div>
+
+    <div class="px-4 space-y-3">
+
+      <!-- INCIDENT CARD 1 — Fight, HIGH severity -->
+      <!-- Structure mirrors OneService recent report card exactly -->
+      <!-- Left edge: 3px colored stripe (category color) via border-l-4 -->
+      <div class="rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] overflow-hidden shadow-sm border-l-4 border-l-[#D93A3A]">
+        <div class="p-4 flex gap-4">
+          <!-- Thumbnail: 80px × 80px, rounded-lg, bg-cover bg-center -->
+          <div class="size-20 bg-slate-100 dark:bg-[#1F2D40] rounded-lg flex-shrink-0 bg-cover bg-center flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#D93A3A] !text-3xl">local_police</span>
+          </div>
+          <div class="flex flex-col justify-between py-0.5 flex-1 min-w-0">
+            <div>
+              <!-- Row 1: Category badge + distance chip -->
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <!-- Badge: bg #D93A3A/10, text #D93A3A, 10px font bold, uppercase, tracking-wider, px-2 py-0.5 rounded-full -->
+                <span class="bg-[#D93A3A]/10 text-[#D93A3A] dark:bg-[#D93A3A]/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-display">Fight</span>
+                <!-- Severity: bg transparent, border #D93A3A, text #D93A3A -->
+                <span class="border border-[#D93A3A] text-[#D93A3A] text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">HIGH</span>
+                <!-- Distance: text slate-400, 10px -->
+                <span class="text-slate-400 text-[10px] font-medium ml-auto font-display">80m away</span>
+              </div>
+              <!-- Title: DM Sans SemiBold 15px Text Primary -->
+              <h3 class="text-slate-900 dark:text-slate-100 font-semibold text-sm font-display">Altercation at Bedok Interchange</h3>
+              <!-- AI Summary: DM Sans Italic 13px Text Secondary — italic signals AI authorship -->
+              <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5 italic font-display">AI: 3 individuals involved near bus stop, ongoing</p>
+            </div>
+            <!-- Footer row: responders + timestamp -->
+            <div class="flex items-center justify-between mt-2">
+              <!-- Responding count: #2EAD76, 12px Medium -->
+              <span class="text-[#2EAD76] text-[11px] font-medium font-display">● 4 responding</span>
+              <!-- Timestamp: DM Mono 10px, text-slate-400, italic -->
+              <p class="text-slate-400 text-[10px] font-mono">2 min ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INCIDENT CARD 2 — Transport Fault, MEDIUM severity -->
+      <div class="rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] overflow-hidden shadow-sm border-l-4 border-l-[#E8A838]">
+        <div class="p-4 flex gap-4">
+          <div class="size-20 bg-slate-100 dark:bg-[#1F2D40] rounded-lg flex-shrink-0 flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#E8A838] !text-3xl">train</span>
+          </div>
+          <div class="flex flex-col justify-between py-0.5 flex-1 min-w-0">
+            <div>
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="bg-[#E8A838]/10 text-[#E8A838] dark:bg-[#E8A838]/20 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider font-display">Transport</span>
+                <span class="border border-[#E8A838] text-[#E8A838] text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">MED</span>
+                <span class="text-slate-400 text-[10px] font-medium ml-auto font-display">250m</span>
+              </div>
+              <h3 class="text-slate-900 dark:text-slate-100 font-semibold text-sm font-display">EWL Delay — Jurong East</h3>
+              <p class="text-slate-500 dark:text-slate-400 text-xs mt-0.5 italic font-display">AI: Service disruption, carriage 3 affected</p>
+            </div>
+            <div class="flex items-center justify-between mt-2">
+              <span class="text-[#2EAD76] text-[11px] font-medium font-display">● 11 notified</span>
+              <p class="text-slate-400 text-[10px] font-mono">8 min ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURRENT LOCATION CARD (mirrors OneService map card) -->
+      <!-- Map preview: 128px height, bg-cover rounded-t-xl -->
+      <div class="rounded-xl border border-slate-200 dark:border-[#263549] bg-white dark:bg-[#192334] overflow-hidden shadow-sm">
+        <!-- Map placeholder: 128px height, dark slate bg with grid pattern for Figma -->
+        <div class="h-32 bg-[#D8E4F4] dark:bg-[#1C3255] flex items-center justify-center relative overflow-hidden">
+          <!-- Map pin overlay -->
+          <div class="absolute inset-0 opacity-20">
+            <svg width="100%" height="100%"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#507DBC" stroke-width="0.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#grid)"/></svg>
+          </div>
+          <div class="flex flex-col items-center gap-1 z-10">
+            <span class="material-symbols-outlined text-[#507DBC] !text-3xl">location_on</span>
+            <span class="text-[#507DBC] font-semibold text-xs font-display">Live Map</span>
+          </div>
+        </div>
+        <div class="p-4 flex items-center justify-between">
+          <div>
+            <p class="text-slate-500 dark:text-slate-400 text-xs font-display">Current Location</p>
+            <h3 class="text-slate-900 dark:text-slate-100 font-bold text-sm font-display">Near Bedok MRT Station</h3>
+          </div>
+          <!-- "View Map" button: bg #507DBC, white text, rounded-lg, 8px px-4 py-2 text-xs -->
+          <button class="bg-[#507DBC] hover:bg-[#3F6AA8] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors font-display">View Map</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       BOTTOM NAV BAR
+       Height: 64px + safe area. bg white/95 dark:bg-background-dark/95
+       Backdrop blur. Top border #D4D9E5 / #263549 1px.
+       5 tabs. Center = elevated Record button (no label below, floats above)
+       ══════════════════════════════════════════════════════════ -->
+  <div class="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto border-t border-slate-200 dark:border-[#263549] bg-white/95 dark:bg-[#0E1621]/95 backdrop-blur-md px-4 pb-6 pt-2 z-20">
+    <div class="flex gap-2 items-end">
+
+      <!-- TAB 1: Home (ACTIVE) — icon + label, #507DBC color when active -->
+      <a class="flex flex-1 flex-col items-center justify-center gap-1 text-[#507DBC]" href="#">
+        <div class="flex h-8 items-center justify-center">
+          <!-- Active tab icon: FILL=1 (filled variant) -->
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">home</span>
+        </div>
+        <p class="text-[10px] font-bold leading-normal tracking-tight font-display">Home</p>
+      </a>
+
+      <!-- TAB 2: Feed — icon + label, slate-400 when inactive -->
+      <a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+        <div class="flex h-8 items-center justify-center">
+          <span class="material-symbols-outlined">list</span>
+        </div>
+        <p class="text-[10px] font-medium leading-normal tracking-tight font-display">Feed</p>
+      </a>
+
+      <!-- TAB 3: RECORD BUTTON (CENTER, ELEVATED) -->
+      <!-- Floats -8px above nav bar. 56px circle. bg #D93A3A. Glow shadow. -->
+      <!-- On recording: pulse animation + "● REC" DM Mono 12px above button -->
+      <div class="flex flex-1 flex-col items-center justify-center -mt-8">
+        <button class="bg-[#D93A3A] text-white h-14 w-14 rounded-full record-pulse flex items-center justify-center active:scale-90 transition-transform relative">
+          <span class="material-symbols-outlined !text-3xl">videocam</span>
+        </button>
+        <p class="text-[10px] font-medium leading-normal tracking-tight mt-1 text-slate-400 font-display">Record</p>
+      </div>
+
+      <!-- TAB 4: Map -->
+      <a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+        <div class="flex h-8 items-center justify-center">
+          <span class="material-symbols-outlined">map</span>
+        </div>
+        <p class="text-[10px] font-medium leading-normal tracking-tight font-display">Map</p>
+      </a>
+
+      <!-- TAB 5: Profile -->
+      <a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+        <div class="flex h-8 items-center justify-center">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+        <p class="text-[10px] font-medium leading-normal tracking-tight font-display">Profile</p>
+      </a>
+
+    </div>
+  </div>
+
+</div>
+
+<!--
+================================================================================
+FIGMA DESIGN SPECIFICATION — COMPLAIN APP
+Copy the patterns above verbatim into Figma components.
+Full token & layout spec below as HTML comments.
+================================================================================
+
+── DESIGN TOKENS ──────────────────────────────────────────────────────────────
+
+COLORS (Light Mode):
+  Background Primary:    #F4F6FA
+  Background Secondary:  #EAECF2
+  Surface 1 (cards):     #FFFFFF
+  Surface 2 (inputs):    #EDF1F7
+  Border Subtle:         #D4D9E5
+  Border Strong:         #B0BAD0
+  Text Primary:          #1B2A41
+  Text Secondary:        #4A5B78
+  Text Disabled:         #9AAABF
+  Accent Primary:        #507DBC  ← BRAND ANCHOR. Never change.
+  Accent Hover:          #3F6AA8
+  Accent Subtle:         #D8E4F4
+  Secondary Accent:      #E8A838
+  Secondary Subtle:      #FDF0D5
+  Danger:                #D93A3A
+  Danger Subtle:         #FDEAEA
+  Success:               #2EAD76
+  Success Subtle:        #D4F3E7
+
+COLORS (Dark Mode):
+  Background Primary:    #0E1621
+  Background Secondary:  #131D2E
+  Surface 1 (cards):     #192334
+  Surface 2 (inputs):    #1F2D40
+  Border Subtle:         #263549
+  Border Strong:         #3A516E
+  Text Primary:          #E8EDF5
+  Text Secondary:        #7E95B5
+  Text Disabled:         #3F5470
+  Accent Primary:        #507DBC  ← same, never changes
+  Accent Hover:          #6A95CE
+  Accent Subtle:         #1C3255
+  Secondary:             #E8A838  ← same, never changes
+  Secondary Subtle:      #3A2C0E
+  Danger:                #E05252
+  Danger Subtle:         #3B1616
+  Success:               #35C483
+  Success Subtle:        #0E3324
+
+CATEGORY COLORS (constant across modes):
+  Fight/Assault:         #D93A3A
+  Harassment:            #9B59D0
+  Crime:                 #C0392B
+  Transport Fault:       #E8A838
+  Medical Emergency:     #E05C2A
+  Fire/Hazard:           #E07A2A
+
+── TYPOGRAPHY ─────────────────────────────────────────────────────────────────
+
+Font 1: DM Sans (Google Fonts — free)
+Font 2: DM Mono (Google Fonts — free)
+
+Scale:
+  App Name (logo):     DM Sans Bold 700  18px  tracking -0.5px
+  Display Headline:    DM Sans Bold 700  28px  tracking -0.4px
+  Screen Title:        DM Sans SemiBold  20px  tracking -0.2px
+  Section Header:      DM Sans Bold      20px  tracking -0.3px   (matches OneService "Report an Issue")
+  Card Title:          DM Sans SemiBold  15px
+  Body:                DM Sans Regular   14px  line-height 1.6
+  Body Medium:         DM Sans Medium    14px
+  Button Label:        DM Sans SemiBold  15px  tracking 0.1px
+  Category Label:      DM Sans SemiBold  10px  UPPERCASE  tracking 0.8px
+  Caption / Meta:      DM Sans Regular   12px  line-height 1.5
+  Report ID / Code:    DM Mono Regular   12px  tracking 0.3px
+  Severity Score:      DM Mono Bold      22px
+  AI content:          DM Sans Italic    13px  (italic = AI-generated signal)
+  Timestamp detail:    DM Mono Regular   10px
+
+── SPACING (8pt grid) ─────────────────────────────────────────────────────────
+
+  4px   Micro (inline icon-to-text)
+  8px   Tight (badge padding, icon margins)
+  12px  Component internal (card padding small)
+  16px  Standard card padding / screen horizontal margin
+  20px  Between cards in a list
+  24px  Section content gap
+  32px  Between major sections
+  48px  Screen top/bottom margins on key screens
+
+── BORDER RADIUS ──────────────────────────────────────────────────────────────
+
+  6px   Tags, small badges
+  8px   Inputs, icon containers
+  12px  Cards, bottom sheet inner elements
+  16px  Bottom sheets (top corners only)
+  20px  Large modals
+  9999px  Pills (buttons, chips, category badges)
+
+── SHADOWS ────────────────────────────────────────────────────────────────────
+
+  Card (light mode):        0px 2px 12px rgba(27, 42, 65, 0.08)
+  Record Button:            0px 0px 20px rgba(217, 58, 58, 0.45)  (red glow)
+  Top Bar:                  none (only bottom border)
+  Bottom Nav:               none (only top border)
+
+── COMPONENT SPECS ────────────────────────────────────────────────────────────
+
+TOP BAR:
+  Height: 72px (includes search bar row)
+  - Row 1 (logo + icons): 48px, px-16, pt-16, pb-8
+  - Row 2 (search): 48px, px-16, pb-12
+  Logo: icon 28px + wordmark "Compl[AI]n" DM Sans Bold 18px
+  Icons right: notification bell 40×40px + avatar 36×36px
+  Search: h-12, rounded-xl, border-[#507DBC]/30, focus border-[#507DBC]
+  Search icon: search glyph, slate-400
+
+ALERT BANNER (conditional):
+  Height: 52px
+  Background: #D93A3A (always — not dark-mode shifted)
+  Left: warning icon 18px white + message DM Sans SemiBold 13px white
+  Right: "View →" DM Sans SemiBold 12px white/80%
+  Below: 2px progress bar, white/40%, depletes over 8 seconds
+
+SECTION HEADER (same pattern as OneService):
+  px-16 pt-24 pb-12
+  Left: DM Sans Bold 20px Text Primary
+  Right: "View all" DM Sans SemiBold 14px #507DBC
+
+CATEGORY GRID (2-column):
+  Container: px-16, gap-12 (12px between items)
+  Cell: rounded-xl, border Border Subtle, bg Surface 1 (white), p-16, shadow-sm
+  Icon container: p-8, rounded-lg (8px), bg=[category]/10, icon=[category color]
+  Label: DM Sans Bold 14px Text Primary, mt-12 below icon container
+  Tap state: scale(0.95) + icon bg becomes full [category color] + icon becomes white
+  Full-width variant (col-span-2): icon + label in a flex row (not stacked)
+
+INCIDENT CARD (same dimensions as OneService recent report card):
+  Container: rounded-xl, border Border Subtle, border-l-4 [category color], bg Surface 1, shadow-sm
+  Inner: p-16, flex row, gap-16
+  Thumbnail: 80×80px, rounded-lg, bg Surface 2, flex-shrink-0
+    — contains category icon 32px in category color
+  Content column: flex-col, justify-between, flex-1, min-w-0
+    Row 1: category badge + severity badge + distance (space-between)
+      Category badge: bg [cat]/10, text [cat], 10px bold uppercase tracking-wider, px-8 py-2 rounded-full
+      Severity badge: border [cat] 1px, text [cat], 10px bold, px-8 py-2 rounded-full, DM Mono
+      Distance: slate-400, 10px DM Sans Medium, ml-auto
+    Row 2: Card Title DM Sans SemiBold 15px Text Primary
+    Row 3: AI Summary DM Sans Italic 13px Text Secondary (2 lines max)
+    Row 4: Responding count #2EAD76 11px Medium + timestamp DM Mono 10px slate-400 right-aligned
+
+LOCATION CARD (mirrors OneService map card):
+  Map preview: h-32 (128px), bg #D8E4F4 / dark:#1C3255, rounded-t-xl, bg-cover bg-center
+  Bottom bar: p-16, flex row, justify-between
+    Left: "Current Location" caption 12px + address bold 14px
+    Right: "View Map" button — bg #507DBC, white text 12px bold, px-16 py-8 rounded-lg
+
+BOTTOM NAV BAR:
+  Height: 64px + bottom safe area (pb-24 = 96px total with safe area)
+  Background: white/95 dark:#0E1621/95, backdrop-blur-md
+  Top border: Border Subtle 1px
+  5 tabs evenly spaced in flex row
+  Active tab: #507DBC — filled icon variant (font-variation-settings: FILL 1) + Bold label 10px
+  Inactive tab: slate-400 — outline icon + Medium label 10px
+  Center Record button:
+    Positioned with -mt-8 (lifts 32px above baseline)
+    Size: 56×56px (h-14 w-14)
+    Background: #D93A3A (Danger red)
+    Icon: videocam, white, 30px
+    Shadow/glow: 0 0 20px rgba(217,58,58,0.45)
+    Animation: scale pulse 2s loop (1.0 → 1.05 → 1.0, opacity 1 → 0.85 → 1)
+    Tap state: scale(0.90) instant
+
+── SCREEN NAVIGATION STRUCTURE ────────────────────────────────────────────────
+
+Tab 1 — Home:       Report categories + Live Nearby incidents (this screen)
+Tab 2 — Feed:       Chronological incident list (with section headers HAPPENING NOW / LAST HOUR)
+Tab 3 — Record:     Floating button → triggers bottom sheet (category select) → full-screen camera
+Tab 4 — Map:        Full-bleed map with incident pins (separate screen — see MAP SCREEN spec below)
+Tab 5 — Profile:    Trust score, stats, settings, dark mode toggle
+
+── MAP SCREEN SPEC (Tab 4) ────────────────────────────────────────────────────
+
+Same top bar as Home screen (with back arrow replaced by "Map" title).
+
+Map Layer (full bleed, occupies top 60% of screen):
+  Style: Muted desaturated Mapbox — light: pale #D8E4F4 tones, dark: #0E1621 tones
+  User location dot: 14px circle, #507DBC fill, white border 2px, outer halo 36px #507DBC/30%
+  Incident pins: 22px circles, category color fill, white icon 12px inside, white ring 2px
+  Active pin pulse: outer ring expands 22px→40px, category color, opacity 1→0, 1.8s loop
+  SPF marker: shield icon, #507DBC, larger 28px
+
+Filter chips (horizontal scroll, below map, identical to Home screen chip style)
+
+Incident list (below chips, same card style as Home screen Live Nearby section)
+  Cards in this view are compact (no AI summary row, just title + distance + timestamp)
+
+── RECORD FLOW (3 steps) ───────────────────────────────────────────────────────
+
+STEP 1 — Category Bottom Sheet:
+  Slides up from bottom, spring animation, covers 60% of screen
+  Handle bar: 4×36px, #D4D9E5 / #263549, centered top, 12px margin above title
+  Background: white / #192334
+  Title: "What's happening?" DM Sans SemiBold 17px Text Primary, 16px from handle
+  Grid: identical to home screen category grid (2×3 layout)
+  Selected state: border 2px category color, bg category/12%, icon + label = category color
+  "Other" text below grid: 13px Text Secondary, centered
+
+STEP 2 — Recording Screen (full screen):
+  Camera feed: full bleed
+  Top overlay: rgba(14,22,33,0.75), not blurred
+    Left: X close 32px circle white
+    Center: selected category pill (colored)
+    Right: flash toggle icon
+  Location strip (top of bottom panel):
+    map-pin 12px #2EAD76 + address DM Sans Regular 13px #E8EDF5
+  Bottom overlay panel: rgba(14,22,33,0.85) backdrop-blur-12, 160px height
+    Record button: 72px circle #D93A3A, white videocam icon 28px, centered
+    Recording state: outer ring 90px #D93A3A/50%, pulse 1.2s + "● REC" DM Mono 12px above + timer DM Mono 14px
+    Caption below button: "Tap to record · Tap again to stop" DM Sans 11px white/50%
+    Left: camera icon (photo mode), right: mic icon (audio only) — both 44px tap targets
+
+STEP 3 — Submission Review Sheet (70% height):
+  Preview: 16:9 ratio, rounded-12px, full width minus 32px margins
+  AI status: animated shimmer → check-circle #2EAD76 + "Content verified by AI" DM Sans Medium 13px
+  Details input: placeholder text, #F4F6FA / #1F2D40 bg, rounded-12px, min-height 80px
+  Anonymous toggle: default ON, toggle color #507DBC
+  Submit button: full width 52px pill, #507DBC bg, "Submit Report" DM Sans SemiBold 15px white
+  Caption: "Will alert people within 250m and notify SPF" — 12px DM Sans Regular Text Secondary
+
+── DARK MODE ──────────────────────────────────────────────────────────────────
+
+Implement using Figma Variables with two modes: "Light" and "Dark".
+Set variable mode at Frame level (not component level) to swap entire screen.
+All surfaces, borders, and text tokens swap. Accent colors (#507DBC, #E8A838, category colors) do NOT change.
+Toggle accessible from Profile tab (sun/moon icon + "Dark Mode" + #507DBC toggle).
+
+── LOGO SPEC ──────────────────────────────────────────────────────────────────
+
+Icon mark: speech bubble shape (asymmetric bottom-right tail for urgency), 
+           with small pulse/crisis wave inside, all in #507DBC
+           Size in nav: 28×28px, rounded-8px background #507DBC, icon white
+
+Wordmark: "Compl" + "AI" + "n"
+  "Compl": DM Sans Bold, #1B2A41 (light) / #E8EDF5 (dark)
+  "AI":    DM Sans Bold, #507DBC (always)
+  "n":     DM Sans Bold, #1B2A41 (light) / #E8EDF5 (dark)
+
+================================================================================
+-->
+
+</body>
+</html>

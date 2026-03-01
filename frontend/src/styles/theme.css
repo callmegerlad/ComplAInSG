@@ -1,0 +1,125 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Foundations */
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Colors - Light Mode */
+  --bg-primary: #F4F6FA;
+  --bg-secondary: #EAECF2;
+  --surface-1: #FFFFFF;
+  --surface-2: #EDF1F7;
+  
+  --border-subtle: #D4D9E5;
+  --border-strong: #B0BAD0;
+  
+  --text-primary: #1B2A41;
+  --text-secondary: #4A5B78;
+  --text-disabled: #9AAABF;
+  
+  --accent-primary: #507DBC;
+  --accent-hover: #3F6AA8;
+  --accent-subtle: #D8E4F4; /* Approx bg-[#507DBC]/10 */
+  
+  --color-secondary: #E8A838;
+  --color-secondary-subtle: #FDF0D5;
+  
+  --danger: #D93A3A;
+  --danger-subtle: #FDEAEA;
+  
+  --success: #2EAD76;
+  --success-subtle: #D4F3E7;
+
+  /* Category Colors (Fixed) */
+  --cat-fight: #D93A3A;
+  --cat-harassment: #9B59D0;
+  --cat-crime: #C0392B;
+  --cat-transport: #E8A838;
+  --cat-medical: #E05C2A;
+  --cat-fire: #E07A2A;
+
+  /* Shadows */
+  --shadow-card: 0 2px 12px 0 rgba(27, 42, 65, 0.08);
+  --shadow-record: 0 0 20px 0 rgba(217, 58, 58, 0.45);
+  --shadow-primary-btn: 0 4px 12px 0 rgba(80, 125, 188, 0.30);
+}
+
+.dark {
+  /* Colors - Dark Mode */
+  --bg-primary: #0E1621;
+  --bg-secondary: #131D2E;
+  --surface-1: #192334;
+  --surface-2: #1F2D40;
+  
+  --border-subtle: #263549;
+  --border-strong: #3A516E;
+  
+  --text-primary: #E8EDF5;
+  --text-secondary: #7E95B5;
+  --text-disabled: #3F5470;
+  
+  --accent-primary: #507DBC; /* Unchanged */
+  --accent-hover: #6A95CE;
+  --accent-subtle: #1C3255;
+  
+  --color-secondary: #E8A838; /* Unchanged */
+  --color-secondary-subtle: #3A2C0E;
+  
+  --danger: #E05252;
+  --danger-subtle: #3B1616;
+  
+  --success: #35C483;
+  --success-subtle: #0E3324;
+}
+
+@theme inline {
+  --font-display: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-background-light: var(--bg-primary);
+  --color-background-dark: var(--bg-primary); /* Mapping to generic names if needed, but better to use specific vars */
+  
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-disabled: var(--text-disabled);
+  
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  
+  --color-secondary: var(--color-secondary);
+  --color-secondary-subtle: var(--color-secondary-subtle);
+  
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  
+  --color-cat-fight: var(--cat-fight);
+  --color-cat-harassment: var(--cat-harassment);
+  --color-cat-crime: var(--cat-crime);
+  --color-cat-transport: var(--cat-transport);
+  --color-cat-medical: var(--cat-medical);
+  --color-cat-fire: var(--cat-fire);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-record: var(--shadow-record);
+  --shadow-primary-btn: var(--shadow-primary-btn);
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary font-sans antialiased;
+  }
+}

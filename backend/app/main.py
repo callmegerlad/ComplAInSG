@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi import FastAPI, WebSocket
+from app.services.realtime import router
 from app.models.schemas import IncidentRequest
 
 
@@ -34,3 +34,24 @@ async def process_incident(req: IncidentRequest):
     data = description
 
     return data 
+
+@app.websocket("/ws/alerts")
+async def ws_alerts(ws: WebSocket):
+    await router.connect(ws)
+    try:
+        while True:
+            msg = await ws.receive_json()
+
+            if msg.get("type") == "LOCATION_UPDATE":
+                router.update_location(
+                    ws,
+                    float(msg["lat"]),
+                    float(msg["lng"]),
+                    float(msg.get("accuracy_m", 9999))
+                )
+                # Optional: user moved -> check against active incidents (no DB reads)
+                await router.on_location_update_check_nearby(ws)
+
+                await ws.send_json({"type": "ACK"})
+    except Exception:
+        router.disconnect(ws)

@@ -66,7 +66,20 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(media) 
 
-    
+    triage_entry = FinalTriage(
+        report_id=incident.id,
+        final_severity=final.final_severity,
+        confidence=final.confidence,
+        incident_type=final.incident_type,
+        routing_target=final.routing_target,
+        user_next_steps=final.user_next_steps,
+        followup_questions=final.followup_questions,
+        responder_summary=final.responder_summary,
+        applied_overrides=final.applied_overrides
+    )
+    db.add(triage_entry)
+    db.commit()
+    db.refresh(triage_entry)
     if radius > 0:
         payload = {
             "type": "ALERT",

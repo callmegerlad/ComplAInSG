@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path as FilePath
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.agents.pipeline import run_triage_pipeline
 from app.core.database import get_db
 from app.dependencies import get_current_user
+from app.media.media import save_base64_image
 from app.models.media import MediaAsset
 from app.models.triage import FinalTriage, IncidentReport
 from app.models.users import User
@@ -20,15 +22,6 @@ from app.schemas.incidents import (
 )
 from app.services.incident_nearby import fetch_nearby_incidents
 from app.services.realtime import router
-from app.models.triage import IncidentReport, FinalTriage
-from app.models.media import MediaAsset
-from app.core.database import get_db
-from sqlalchemy.orm import Session
-from app.media.media import save_base64_image
-from pathlib import Path as FilePath
-from app.services.incident_nearby import fetch_nearby_incidents
-from app.dependencies import get_current_user
-from app.models.users import User
 
 
 
@@ -70,7 +63,7 @@ def to_incident_detail_response(incident: IncidentReport) -> IncidentDetailRespo
 
 
 @incidents_router.post("/triage")
-async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
+async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 
     incident_id = str(uuid4())
     saved_path = None

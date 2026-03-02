@@ -327,7 +327,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
               id="rf-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what you see — what happened, exact location, any urgent risks..."
+              placeholder="Describe what you see ï¿½ what happened, exact location, any urgent risks..."
               className="min-h-[96px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
             />
           </div>

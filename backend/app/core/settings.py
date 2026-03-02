@@ -11,7 +11,17 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = ""
 
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
+    # All origins that the browser may report as the page origin.
+    # In Docker dev the Vite server binds to 0.0.0.0 so both `localhost` and
+    # `127.0.0.1` are valid hostnames from the browser's perspective, and they
+    # are treated as distinct CORS origins.  Production builds served on port
+    # 3000 are also included.  Set this env var (JSON array) to override.
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
     # JWT Configuration
     JWT_ALGORITHM: str = "HS256"

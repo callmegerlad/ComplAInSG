@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = ""
 
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
 
     # JWT Configuration
     JWT_ALGORITHM: str = "HS256"

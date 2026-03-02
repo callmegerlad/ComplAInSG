@@ -1,6 +1,14 @@
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 export function AuthPage() {
+  const { demoLogin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSingpass = () => {
+    demoLogin();
+    navigate("/", { replace: true });
+  };
   return (
     <div className="relative min-h-screen overflow-hidden bg-accent-primary text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_32%),linear-gradient(180deg,rgba(10,24,44,0.10),rgba(10,24,44,0.26))]" />
@@ -54,12 +62,13 @@ export function AuthPage() {
                 </ul>
               </div>
 
-              <Link
-                to="/"
+              <button
+                type="button"
+                onClick={handleSingpass}
                 className="inline-flex w-full items-center justify-center rounded-full bg-accent-primary px-4 py-3.5 text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-[0.98]"
               >
                 Continue with Singpass
-              </Link>
+              </button>
             </div>
           </div>
         </section>

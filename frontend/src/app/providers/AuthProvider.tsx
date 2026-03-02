@@ -36,6 +36,8 @@ interface AuthContextValue {
   register: (input: RegisterInput) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  /** Sets the session to authenticated in-memory without hitting the backend. For demo/Singpass bypass only. */
+  demoLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -123,6 +125,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("unauthenticated");
   }
 
+  function demoLogin() {
+    const demoUser: AuthUser = {
+      id: "demo",
+      display_name: "Demo User",
+      email: "demo@complainsg.gov.sg",
+      role: "user",
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setUser(demoUser);
+    setAccessToken("demo-token");
+    setStatus("authenticated");
+  }
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -132,6 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       refreshUser,
+      demoLogin,
     }),
     [accessToken, status, user],
   );

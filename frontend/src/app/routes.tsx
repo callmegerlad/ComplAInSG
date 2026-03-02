@@ -7,23 +7,33 @@ import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
 import { IncidentDetailsPage } from "./pages/IncidentDetails";
 import { AuthPage } from "./pages/Auth";
+import { RequireAuth, PublicOnlyAuthRoute } from "./components/auth/AuthGuards";
 
 export const router = createBrowserRouter([
+  // /auth is only accessible when NOT signed in
   {
-    path: "/auth",
-    Component: AuthPage,
-  },
-  {
-    path: "/",
-    Component: RootLayout,
+    Component: PublicOnlyAuthRoute,
     children: [
-      { index: true, Component: HomePage },
-      { path: "feed", Component: FeedPage },
-      { path: "map", Component: MapPage },
-      { path: "incidents/:incidentId", Component: IncidentDetailsPage },
-      { path: "notifications", Component: NotificationsPage },
-      { path: "profile", Component: ProfilePage },
-      { path: "*", Component: () => <div>Not Found</div> },
+      { path: "/auth", Component: AuthPage },
+    ],
+  },
+  // all app routes require a valid session
+  {
+    Component: RequireAuth,
+    children: [
+      {
+        path: "/",
+        Component: RootLayout,
+        children: [
+          { index: true, Component: HomePage },
+          { path: "feed", Component: FeedPage },
+          { path: "map", Component: MapPage },
+          { path: "incidents/:incidentId", Component: IncidentDetailsPage },
+          { path: "notifications", Component: NotificationsPage },
+          { path: "profile", Component: ProfilePage },
+          { path: "*", Component: () => <div>Not Found</div> },
+        ],
+      },
     ],
   },
 ]);

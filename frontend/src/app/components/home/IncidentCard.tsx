@@ -1,5 +1,6 @@
-import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { Link } from "react-router";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
+import { IncidentCredibility } from "../incidents/IncidentCredibility";
 
 const FALLBACK_INCIDENT_IMAGE =
   "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=200&auto=format&fit=crop";
@@ -18,8 +19,8 @@ export interface Incident {
   status?: string;
   imageUrl?: string;
   responders: number;
-  // geographic coordinate for mapping (latitude, longitude).
-  // optional so that existing data stays compatible.
+  credibilityUpvotes?: number;
+  credibilityDownvotes?: number;
   lat?: number;
   lng?: number;
 }
@@ -60,17 +61,13 @@ export function IncidentCard({ incident }: { incident: Incident }) {
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span
               className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
-              style={{
-                backgroundColor: incident.categoryColor,
-              }}
+              style={{ backgroundColor: incident.categoryColor }}
             >
               {incident.category}
             </span>
             <span
               className="rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-white"
-              style={{
-                backgroundColor: getSeverityColor(incident.severity),
-              }}
+              style={{ backgroundColor: getSeverityColor(incident.severity) }}
             >
               {incident.severity}
             </span>
@@ -87,20 +84,23 @@ export function IncidentCard({ incident }: { incident: Incident }) {
             {incident.summary}
           </p>
 
-          <div className="mt-auto flex items-center justify-between pt-1">
-            <span className="flex items-center gap-1 text-[11px] font-medium text-success">
-              <span aria-hidden="true">•</span>
-              {incident.responders} responding
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-text-disabled">{incident.timestamp}</span>
-              <Link
-                to={`/incidents/${incident.id}`}
-                className="inline-flex items-center justify-center rounded-full bg-accent-primary px-2.5 py-1 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
-              >
-                Details
-              </Link>
+          <div className="mt-auto pt-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1 text-[11px] font-medium text-success">
+                <span aria-hidden="true">•</span>
+                {incident.responders} responding
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[10px] text-text-disabled">{incident.timestamp}</span>
+                <Link
+                  to={`/incidents/${incident.id}`}
+                  className="inline-flex items-center justify-center rounded-full bg-accent-primary px-2.5 py-1 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
+                >
+                  Details
+                </Link>
+              </div>
             </div>
+            <IncidentCredibility incidentId={incident.id} className="mt-2" />
           </div>
         </div>
       </div>

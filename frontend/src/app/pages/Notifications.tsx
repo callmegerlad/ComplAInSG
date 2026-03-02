@@ -1,5 +1,6 @@
 import { TopBar } from "../components/layout/TopBar";
 import { Link } from "react-router";
+import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 
 const notifications = [
   {
@@ -79,6 +80,7 @@ export function NotificationsPage() {
                 <div className="mt-3 inline-flex rounded-full bg-accent-subtle px-2.5 py-1 text-[11px] font-bold text-accent-primary">
                   {notification.distance}
                 </div>
+                <IncidentCredibility incidentId={notification.id} className="mt-3" />
                 <div className="mt-3">
                   <Link
                     to={`/incidents/${notification.id}`}

@@ -6,6 +6,7 @@ import { Incident } from "../components/home/IncidentCard";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 import { incidents as allIncidents } from "@/lib/incidents";
 
 export function HomePage() {
@@ -135,6 +136,7 @@ export function HomePage() {
                     <InfoBadgeLight icon="schedule" label={recommendedIncident.timestamp} />
                     <InfoBadgeLight icon="groups" label={`${recommendedIncident.responders} responding`} />
                   </div>
+                  <IncidentCredibility incidentId={recommendedIncident.id} className="mt-3" />
                 </div>
               </div>
               <div className="px-4 pb-4">
@@ -189,16 +191,23 @@ export function HomePage() {
                       <div className="mt-2 space-y-2">
                         <InfoBadge icon="location_on" label={incident.location} />
                       </div>
-                      <div className="mt-4 flex items-center justify-between gap-4 pt-1">
-                        <span className="pr-2 text-[11px] font-medium text-white/88">
-                          {incident.responders} responding
-                        </span>
-                        <Link
-                          to={`/incidents/${incident.id}`}
-                          className="inline-flex min-w-[68px] items-center justify-center rounded-full bg-accent-primary px-3 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
-                        >
-                          Details
-                        </Link>
+                      <div className="mt-4 space-y-2 pt-1">
+                        <IncidentCredibility
+                          incidentId={incident.id}
+                          compact
+                          inverted
+                        />
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="pr-2 text-[11px] font-medium text-white/88">
+                            {incident.responders} responding
+                          </span>
+                          <Link
+                            to={`/incidents/${incident.id}`}
+                            className="inline-flex min-w-[68px] items-center justify-center rounded-full bg-accent-primary px-3 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
+                          >
+                            Details
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>

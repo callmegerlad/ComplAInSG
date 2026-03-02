@@ -4,6 +4,7 @@ import { TopBar } from "../components/layout/TopBar";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
 import { RecordFlow } from "../components/record/RecordFlow";
+import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 import { getIncidentById } from "@/lib/incidents";
 
 const FALLBACK_INCIDENT_IMAGE =
@@ -156,6 +157,8 @@ export function IncidentDetailsPage() {
               <MetaCard icon="schedule" label="Reported" value={incident.timestamp} />
               <MetaCard icon="person" label="Reporter" value="@jason_lim" />
             </div>
+
+            <IncidentCredibility incidentId={incident.id} />
 
             <div className="grid gap-3">
               <button

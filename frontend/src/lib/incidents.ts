@@ -40,6 +40,8 @@ export const incidents: IncidentWithMeta[] = [
     responders: 4,
     imageUrl:
       "https://images.unsplash.com/photo-1563266914-94073574828f?q=80&w=200&auto=format&fit=crop",
+    credibilityUpvotes: 18,
+    credibilityDownvotes: 2,
     timeGroup: "HAPPENING NOW",
     lat: 1.3694,
     lng: 103.8453,
@@ -59,6 +61,8 @@ export const incidents: IncidentWithMeta[] = [
     responders: 2,
     imageUrl:
       "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?q=80&w=200&auto=format&fit=crop",
+    credibilityUpvotes: 11,
+    credibilityDownvotes: 3,
     timeGroup: "HAPPENING NOW",
     lat: 1.3044,
     lng: 103.8329,
@@ -77,6 +81,8 @@ export const incidents: IncidentWithMeta[] = [
     responders: 6,
     imageUrl:
       "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=200&auto=format&fit=crop",
+    credibilityUpvotes: 16,
+    credibilityDownvotes: 1,
     timeGroup: "LAST HOUR",
     lat: 1.301,
     lng: 103.8554,
@@ -95,6 +101,8 @@ export const incidents: IncidentWithMeta[] = [
     responders: 3,
     imageUrl:
       "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=200&auto=format&fit=crop",
+    credibilityUpvotes: 8,
+    credibilityDownvotes: 4,
     timeGroup: "EARLIER TODAY",
     lat: 1.3548,
     lng: 103.9417,

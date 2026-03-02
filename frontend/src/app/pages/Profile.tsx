@@ -2,10 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { applyTheme, getPreferredTheme } from "@/lib/theme";
+import { useAuth } from "../providers/AuthProvider";
+import { getUserInitials } from "@/lib/auth";
 
 export function ProfilePage() {
   const [isDarkMode, setIsDarkMode] = useState(() => getPreferredTheme() === "dark");
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const initials = getUserInitials(user);
+  const displayName = user?.display_name?.trim() || "Community User";
+  const email = user?.email ?? "";
+  const reportCount = user?.report_count ?? 0;
+  const joinedDate = user ? new Date(user.created_at).toLocaleDateString() : "Unknown";
 
   return (
     <div className="flex flex-col min-h-full pb-8">
@@ -39,12 +47,12 @@ export function ProfilePage() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 mx-4 mb-8">
         {[
-          { label: 'Reports', value: '12' },
+          { label: 'Reports', value: reportCount.toString() },
           { label: 'Responses', value: '45' },
-          { label: 'Verified', value: '8' },
+          { label: 'Joined', value: joinedDate },
         ].map(stat => (
-          <div key={stat.label} className="bg-surface-1 rounded-xl p-3 flex flex-col items-center border border-border-subtle shadow-sm">
-            <span className="text-[22px] font-mono font-bold text-text-primary">{stat.value}</span>
+          <div key={stat.label} className="bg-surface-1 rounded-xl p-3 flex flex-col items-center justify-center border border-border-subtle shadow-sm overflow-hidden">
+            <span className={`${stat.label === 'Joined' ? 'text-[14px]' : 'text-[22px]'} font-mono font-bold text-text-primary`}>{stat.value}</span>
             <span className="text-[12px] text-text-secondary">{stat.label}</span>
           </div>
         ))}

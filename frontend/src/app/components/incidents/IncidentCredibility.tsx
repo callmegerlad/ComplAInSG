@@ -92,7 +92,11 @@ function VoteButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+      }}
       aria-label={label}
       className={cn(
         "flex items-center justify-center rounded-full border border-border-subtle bg-surface-1 text-text-secondary transition-colors hover:bg-accent-subtle hover:text-accent-primary",

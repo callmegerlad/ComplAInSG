@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCurrentLocation } from "@/lib/location";
+import { INCIDENT_CATEGORIES } from "@/lib/incidents";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,17 +21,6 @@ interface TriageResponse {
   final: FinalTriageOutput;
   metadata: unknown;
 }
-
-// ─── Categories ───────────────────────────────────────────────────────────────
-
-const CATEGORIES = [
-  { label: "Cleanliness", icon: "delete_sweep", color: "#f59e0b" },
-  { label: "Maintenance", icon: "build", color: "#6366f1" },
-  { label: "Pests", icon: "pest_control", color: "#84cc16" },
-  { label: "Roads & Drains", icon: "traffic", color: "#0ea5e9" },
-  { label: "Trees & Plants", icon: "park", color: "#22c55e" },
-  { label: "Others", icon: "more_horiz", color: "#9ca3af" },
-];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -344,7 +334,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
               <span className="font-normal text-text-secondary">(optional)</span>
             </p>
             <div className="grid grid-cols-3 gap-2">
-              {CATEGORIES.map((cat) => (
+              {INCIDENT_CATEGORIES.map((cat) => (
                 <button
                   key={cat.label}
                   type="button"

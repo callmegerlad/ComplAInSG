@@ -63,7 +63,7 @@ export function IncidentTicker({ incidents }: IncidentTickerProps) {
       </div>
 
       <div
-        className="flex px-4 flex-1 min-h-0 items-stretch"
+        className="flex flex-1 min-h-0 items-stretch"
         style={{
           animation: `incidentTicker ${TICKER_DURATION_S}s linear infinite`,
           animationPlayState: paused ? "paused" : "running",
@@ -87,8 +87,8 @@ export function IncidentTicker({ incidents }: IncidentTickerProps) {
       </div>
 
       {/* Fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-bg-primary to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-bg-primary to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-surface-1 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-surface-1 to-transparent" />
 
       <style>{`
         @keyframes incidentTicker {
@@ -137,7 +137,7 @@ function TickerCard({ incident }: { incident: Incident }) {
       </div>
 
       {/* info column */}
-      <div className="flex flex-1 flex-col justify-between p-2.5 min-h-0 overflow-auto">
+      <div className="flex flex-1 flex-col justify-between p-2.5 overflow-hidden">
         <div>
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
             <span
@@ -168,7 +168,11 @@ function TickerCard({ incident }: { incident: Incident }) {
         </div>
 
         {/* Credibility voting */}
-        <div onClick={(e) => e.stopPropagation()}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
+        >
           <IncidentCredibility incidentId={incident.id} className="mt-1.5" />
         </div>
       </div>

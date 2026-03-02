@@ -26,7 +26,7 @@ export function TopBar({ showSearch = true }: TopBarProps) {
              <span className="font-bold text-lg text-text-primary">Compl</span>
              <span className="font-bold text-lg text-blue-500">AI</span>
              <span className="font-bold text-lg text-text-primary">n</span>
-             <span className="inline-flex items-center justify-center w-7 h-7 border-2 border-red-500 rounded-full bg-red-500 font-bold text-text-primary">SG</span>
+             <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500 font-bold text-bg-primary">SG</span>
           </div>
         </div>
         
@@ -48,7 +48,7 @@ export function TopBar({ showSearch = true }: TopBarProps) {
              className="h-9 w-9 rounded-full bg-accent-subtle border-2 border-accent-primary/20 flex items-center justify-center text-accent-primary font-bold text-[13px]"
              aria-label="Open profile"
            >
-              JD
+              {initials}
            </Link>
         </div>
       </div>

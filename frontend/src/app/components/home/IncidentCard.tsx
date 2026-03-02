@@ -19,6 +19,7 @@ export interface Incident {
   status?: string;
   imageUrl?: string;
   responders: number;
+  reporter?: string;
   credibilityUpvotes?: number;
   credibilityDownvotes?: number;
   lat?: number;
@@ -113,3 +114,5 @@ function getSeverityColor(severity: Incident["severity"]) {
   if (severity === "Medium") return "var(--cat-transport)";
   return "var(--success)";
 }
+
+

@@ -1,4 +1,6 @@
-import { Incident } from "@/app/components/home/IncidentCard";
+import type { Incident } from "@/app/components/home/IncidentCard";
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
 
 export type IncidentTimeGroup =
   | "HAPPENING NOW"
@@ -24,23 +26,21 @@ export const defaultIncidentFilters: IncidentFilterState = {
   category: "All",
 };
 
-// ─── Category definitions ──────────────────────────────────────────────────
-// Single source of truth for incident categories used across the app.
-// Add or remove entries here to update all screens automatically.
 export type IncidentCategory = {
   label: string;
-  color: string; // CSS value (variable or hex)
-  icon: string;  // material-symbols-outlined name
+  color: string;
+  icon: string;
 };
 
 export const INCIDENT_CATEGORIES: IncidentCategory[] = [
-  { label: "Fight/Assault",   color: "var(--cat-fight)",     icon: "local_police" },
+  { label: "Fight/Assault", color: "var(--cat-fight)", icon: "local_police" },
   { label: "Transport Fault", color: "var(--cat-transport)", icon: "train" },
-  { label: "Medical Emerg",   color: "var(--cat-medical)",   icon: "emergency" },
-  { label: "Fire/Hazard",     color: "var(--cat-fire)",      icon: "local_fire_department" },
-  { label: "Others",          color: "var(--text-disabled)",  icon: "more_horiz" },
+  { label: "Medical Emerg", color: "var(--cat-medical)", icon: "emergency" },
+  { label: "Fire/Hazard", color: "var(--cat-fire)", icon: "local_fire_department" },
+  { label: "Others", color: "var(--text-disabled)", icon: "more_horiz" },
 ];
 
+// Static fallback seed data. The app now prefers backend incident endpoints.
 export const incidents: IncidentWithMeta[] = [
   {
     id: "1",
@@ -146,6 +146,81 @@ export const severityOptions: SeverityFilter[] = [
   "Low",
 ];
 
+type ApiFinalTriage = {
+  incident_type?: string | null;
+  final_severity?: string | number | null;
+  responder_summary?: string | null;
+};
+
+type ApiIncidentDetail = {
+  id: string;
+  location_text: string;
+  description: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  final_triage?: ApiFinalTriage | null;
+  reporter_name?: string | null;
+};
+
+type ApiIncidentListResponse = {
+  total: number;
+  incidents: ApiIncidentDetail[];
+};
+
+type ApiNearbyIncidentItem = {
+  incident_id: string;
+  location?: string | null;
+  description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  distance_m: number;
+};
+
+type ApiNearbyIncidentsResponse = {
+  nearby_incidents: ApiNearbyIncidentItem[];
+};
+
+export async function fetchIncidentList(params: { skip?: number; limit?: number } = {}) {
+  const skip = params.skip ?? 0;
+  const limit = params.limit ?? 30;
+  const query = new URLSearchParams({
+    skip: String(skip),
+    limit: String(limit),
+  });
+
+  const data = await request<ApiIncidentListResponse>(`/incidents?${query.toString()}`);
+
+  return {
+    total: data.total,
+    incidents: data.incidents.map((incident) => mapApiIncidentToIncident(incident)),
+  };
+}
+
+export async function fetchIncidentById(incidentId: string) {
+  const data = await request<ApiIncidentDetail>(`/incidents/${incidentId}`);
+  return mapApiIncidentToIncident(data);
+}
+
+export async function fetchNearbyIncidents(
+  lat: number,
+  lng: number,
+  params: { radius_m?: number; limit?: number } = {},
+): Promise<IncidentWithMeta[]> {
+  const query = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+    radius_m: String(params.radius_m ?? 5000),
+    limit: String(params.limit ?? 20),
+  });
+
+  const data = await request<ApiNearbyIncidentsResponse>(`/incidents/nearby?${query.toString()}`);
+
+  return data.nearby_incidents.map((incident) => mapNearbyIncidentToIncident(incident));
+}
+
 export function getIncidentCategories(items: IncidentWithMeta[]): string[] {
   return ["All", ...new Set(items.map((item) => item.category))];
 }
@@ -187,19 +262,203 @@ export function filterIncidents(
   filters: IncidentFilterState,
 ): IncidentWithMeta[] {
   return items.filter((item) => {
-    const matchesSeverity =
-      filters.severity === "All" || item.severity === filters.severity;
-    const matchesCategory =
-      filters.category === "All" || item.category === filters.category;
+    const matchesSeverity = filters.severity === "All" || item.severity === filters.severity;
+    const matchesCategory = filters.category === "All" || item.category === filters.category;
 
-    return (
-      matchesSeverity &&
-      matchesCategory &&
-      matchesProximity(item.distance, filters.proximity)
-    );
+    return matchesSeverity && matchesCategory && matchesProximity(item.distance, filters.proximity);
   });
 }
 
 export function getIncidentById(id: string): IncidentWithMeta | undefined {
   return incidents.find((incident) => incident.id === id);
 }
+
+function mapApiIncidentToIncident(apiIncident: ApiIncidentDetail): IncidentWithMeta {
+  const incidentType = normalizeIncidentType(apiIncident.final_triage?.incident_type);
+  const severity = normalizeSeverity(apiIncident.final_triage?.final_severity);
+  const categoryMeta = getCategoryMeta(incidentType);
+
+  return {
+    id: apiIncident.id,
+    category: categoryMeta.label,
+    categoryColor: categoryMeta.color,
+    categoryIcon: categoryMeta.icon,
+    severity,
+    location: apiIncident.location_text || "Unknown location",
+    distance: "N/A",
+    title: `${incidentType} reported`,
+    summary:
+      apiIncident.final_triage?.responder_summary?.trim() ||
+      apiIncident.description ||
+      "Incident report received.",
+    timestamp: formatRelativeTime(apiIncident.created_at),
+    status: apiIncident.status,
+    responders: 0,
+    reporter: apiIncident.reporter_name?.trim() || "Anonymous",
+    credibilityUpvotes: 0,
+    credibilityDownvotes: 0,
+    lat: apiIncident.latitude ?? undefined,
+    lng: apiIncident.longitude ?? undefined,
+    timeGroup: toTimeGroup(apiIncident.created_at),
+  };
+}
+
+function mapNearbyIncidentToIncident(apiIncident: ApiNearbyIncidentItem): IncidentWithMeta {
+  return {
+    id: apiIncident.incident_id,
+    category: "Nearby Incident",
+    categoryColor: "var(--cat-transport)",
+    categoryIcon: "report",
+    severity: "Medium",
+    location: apiIncident.location || "Unknown location",
+    distance: formatDistanceMeters(apiIncident.distance_m),
+    title: "Nearby incident reported",
+    summary: apiIncident.description || "Incident reported nearby.",
+    timestamp: "Recent",
+    responders: 0,
+    reporter: "Anonymous",
+    credibilityUpvotes: 0,
+    credibilityDownvotes: 0,
+    lat: apiIncident.latitude ?? undefined,
+    lng: apiIncident.longitude ?? undefined,
+    timeGroup: "HAPPENING NOW",
+  };
+}
+
+function normalizeIncidentType(rawValue: string | null | undefined): string {
+  if (!rawValue) {
+    return "Incident";
+  }
+
+  return rawValue
+    .replace(/_/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizeSeverity(rawValue: string | number | null | undefined): Incident["severity"] {
+  if (typeof rawValue === "number") {
+    if (rawValue >= 3) return "High";
+    if (rawValue >= 2) return "Medium";
+    return "Low";
+  }
+
+  const text = String(rawValue ?? "").toLowerCase();
+
+  if (text.includes("critical") || text.includes("high")) {
+    return "High";
+  }
+
+  if (text.includes("medium")) {
+    return "Medium";
+  }
+
+  return "Low";
+}
+
+function getCategoryMeta(incidentType: string): IncidentCategory {
+  const normalizedType = incidentType.toLowerCase();
+
+  if (normalizedType.includes("fight") || normalizedType.includes("assault") || normalizedType.includes("violence")) {
+    return INCIDENT_CATEGORIES[0];
+  }
+
+  if (normalizedType.includes("transport") || normalizedType.includes("traffic") || normalizedType.includes("mrt")) {
+    return INCIDENT_CATEGORIES[1];
+  }
+
+  if (normalizedType.includes("medical") || normalizedType.includes("injury") || normalizedType.includes("emerg")) {
+    return INCIDENT_CATEGORIES[2];
+  }
+
+  if (normalizedType.includes("fire") || normalizedType.includes("hazard") || normalizedType.includes("smoke")) {
+    return INCIDENT_CATEGORIES[3];
+  }
+
+  return INCIDENT_CATEGORIES[4];
+}
+
+function toTimeGroup(createdAtIso: string): IncidentTimeGroup {
+  const createdAt = new Date(createdAtIso).getTime();
+
+  if (Number.isNaN(createdAt)) {
+    return "EARLIER TODAY";
+  }
+
+  const ageMinutes = (Date.now() - createdAt) / 60000;
+
+  if (ageMinutes <= 15) {
+    return "HAPPENING NOW";
+  }
+
+  if (ageMinutes <= 60) {
+    return "LAST HOUR";
+  }
+
+  return "EARLIER TODAY";
+}
+
+function formatRelativeTime(createdAtIso: string): string {
+  const createdAt = new Date(createdAtIso).getTime();
+
+  if (Number.isNaN(createdAt)) {
+    return "Recent";
+  }
+
+  const elapsedMs = Date.now() - createdAt;
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+
+  if (elapsedMinutes < 1) {
+    return "Just now";
+  }
+
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes} min ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+
+  if (elapsedHours < 24) {
+    return `${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
+  }
+
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
+}
+
+function formatDistanceMeters(distanceMeters: number): string {
+  if (!Number.isFinite(distanceMeters) || distanceMeters < 0) {
+    return "N/A";
+  }
+
+  if (distanceMeters < 1000) {
+    return `${Math.round(distanceMeters)}m`;
+  }
+
+  return `${(distanceMeters / 1000).toFixed(1)}km`;
+}
+
+async function request<T>(path: string, init: RequestInit = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...init.headers,
+    },
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const data = contentType.includes("application/json") ? await response.json() : null;
+
+  if (!response.ok) {
+    const detail = typeof data?.detail === "string" ? data.detail : "Incident API request failed.";
+    throw new Error(detail);
+  }
+
+  return data as T;
+}
+
+
+
+

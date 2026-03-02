@@ -11,7 +11,14 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = ""
 
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:3000"]
+    # CORS: explicit allow-list plus optional regex for local dev ports.
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ]
+    ALLOWED_ORIGIN_REGEX: str = r"https?://(localhost|127\\.0\\.0\\.1)(:\\d+)?"
 
     # JWT Configuration
     JWT_ALGORITHM: str = "HS256"

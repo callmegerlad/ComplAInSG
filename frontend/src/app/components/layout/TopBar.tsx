@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { Link } from "react-router";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { getUserInitials } from "@/lib/auth";
+import { useAlerts } from "@/app/providers/AlertsProvider";
 
 interface TopBarProps {
   showSearch?: boolean;
@@ -9,6 +10,7 @@ interface TopBarProps {
 
 export function TopBar({ showSearch = true }: TopBarProps) {
   const { user } = useAuth();
+  const { unreadCount } = useAlerts();
   const initials = getUserInitials(user);
 
   return (
@@ -34,7 +36,11 @@ export function TopBar({ showSearch = true }: TopBarProps) {
              aria-label="Open notifications"
            >
              <span className="material-symbols-outlined text-[20px]">notifications</span>
-             <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-danger"></span>
+             {unreadCount > 0 ? (
+               <span className="absolute right-1 top-1 min-w-4 rounded-full bg-cat-fight px-1 text-center text-[10px] font-bold leading-4 text-white">
+                 {unreadCount > 9 ? "9+" : unreadCount}
+               </span>
+             ) : null}
            </Link>
            <Link
              to="/profile"

@@ -1,3 +1,4 @@
+import asyncio
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -19,8 +20,16 @@ from app.schemas.incidents import (
 )
 from app.services.incident_nearby import fetch_nearby_incidents
 from app.services.realtime import router
-from app.utills.media import save_base64_image
+from app.models.triage import IncidentReport, FinalTriage
+from app.models.media import MediaAsset
+from app.core.database import get_db
+from sqlalchemy.orm import Session
+from app.media.media import save_base64_image
 from pathlib import Path as FilePath
+from app.services.incident_nearby import fetch_nearby_incidents
+from app.dependencies import get_current_user
+from app.models.users import User
+
 
 
 incidents_router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -61,7 +70,7 @@ def to_incident_detail_response(incident: IncidentReport) -> IncidentDetailRespo
 
 
 @incidents_router.post("/triage")
-async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
 
     incident_id = str(uuid4())
     saved_path = None
@@ -74,7 +83,7 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_us
     final, vision, text_triage, metadata = await run_triage_pipeline(
         req.location,
         req.description,
-        req.image_url,
+        req.image_url
     )
 
     radius = severity_radius(final.final_severity)
@@ -84,9 +93,8 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_us
         location_text=req.location,
         description=req.description,
         latitude=req.lat,
-        longitude=req.lng,
-    )
-
+        longitude=req.lng,)
+    
     db.add(incident)
     db.commit()
     db.refresh(incident)

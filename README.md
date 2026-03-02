@@ -1,3 +1,6 @@
+<div align="center">
+  <img src="frontend/src/assets/logo.svg" alt="ComplAIn SG Logo" width="120" />
+</div>
 
 <h1 align="center" style="font-size: 2em; font-weight: bold; letter-spacing: -0.5px;">
 🚨 Compl<span style="color: #507DBC;">AI</span>n<span style="color: #EE2536;">SG</span>

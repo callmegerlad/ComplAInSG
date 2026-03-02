@@ -20,5 +20,10 @@ async def ws_alerts(ws: WebSocket):
                 )
 
                 await ws.send_json({"type":"ACK"})
-    except:
+    except Exception:
+        # All ordinary exceptions (connection resets, JSON errors, etc.)
         router.disconnect(ws)
+    except BaseException:
+        # Re-raise critical system signals (KeyboardInterrupt, SystemExit, …)
+        router.disconnect(ws)
+        raise

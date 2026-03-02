@@ -16,7 +16,8 @@ final_agent = Agent(
         "- description\n"
         "- text_triage (structured)\n"
         "- optional vision_output (structured)\n"
-        "You MUST call apply_safety_overrides(text_triage, vision_output) once to get final severity and overrides.\n"
+        "You MUST call apply_safety_overrides(text_triage=text_triage, vision=vision_output, description=description) "
+        "once to get final severity and overrides.\n"
         "Then produce FinalTriageOutput with:\n"
         "- incident_type: from text_triage\n"
         "- final_severity: from override tool result\n"
@@ -30,7 +31,7 @@ final_agent = Agent(
         "- followup_questions: from text_triage.missing_questions (max 3)\n"
         "- responder_summary: compact and factual (what/where/when/hazards/media)\n"
         "- applied_overrides: from tool output\n"
-        "- However, if the image has nothing relevant to safety concerns, whether listed here or not, give the user 1 question asking whether "
+        "- However, if the image has nothing relevant to safety concerns, whether listed here or not, give the user questions to confirm that the incident is safe and doesn't need escalation. Do not assume safety, but ask the user to confirm it.\n"
         "Never invent facts not in the inputs.\n"
     ),
     output_type=FinalTriageOutput,

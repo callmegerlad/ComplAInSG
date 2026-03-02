@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { applyTheme, getPreferredTheme } from "@/lib/theme";
 
 export function ProfilePage() {
   const [isDarkMode, setIsDarkMode] = useState(() => getPreferredTheme() === "dark");
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col min-h-full pb-8">
@@ -80,6 +82,12 @@ export function ProfilePage() {
         ].map((item, i) => (
           <button 
             key={item.label}
+            type="button"
+            onClick={() => {
+              if (item.label === "Sign Out") {
+                navigate("/auth");
+              }
+            }}
             className={`
               w-full flex items-center justify-between p-4 hover:bg-surface-2 transition-colors
               ${i !== 0 ? 'border-t border-border-subtle' : ''}

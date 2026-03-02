@@ -33,24 +33,24 @@ export function HomePage() {
         <div className="flex flex-1 flex-col pb-8">
           
           {/* Report Section */}
-          <section className="relative flex items-center justify-center px-4 pb-10 pt-8">
+          <section className="relative flex items-center justify-center px-4 pb-6 pt-4">
             <div
-              className="absolute inset-x-4 inset-y-0 rounded-[22px] border border-border-subtle/60"
+              className="absolute inset-x-5 bottom-2 top-1 rounded-[22px] border border-border-subtle/60"
               style={{
                 background: "var(--report-backdrop)",
                 boxShadow: "var(--report-backdrop-shadow)",
               }}
             />
             <div
-              className="absolute inset-x-6 inset-y-3 rounded-[18px] opacity-100"
+              className="absolute inset-x-7 bottom-5 top-4 rounded-[18px] opacity-100"
               style={{ backgroundImage: "var(--report-backdrop-pattern)" }}
             />
-            <div className="absolute inset-x-8 top-8 h-px bg-white/50 dark:bg-white/18" />
-            <div className="absolute inset-x-12 bottom-10 h-px bg-white/38 dark:bg-white/14" />
-            <div className="absolute left-8 top-8 h-16 w-16 border-l border-t border-white/55 dark:border-white/20" />
-            <div className="absolute bottom-10 right-12 h-20 w-20 border-b border-r border-white/45 dark:border-white/16" />
-            <div className="absolute right-10 top-12 h-44 w-44 bg-accent-primary/10 blur-3xl dark:bg-accent-primary/14" />
-            <div className="absolute inset-x-8 top-6 h-28 rounded-full blur-3xl" style={{ backgroundColor: "var(--report-halo)" }} />
+            <div className="absolute inset-x-9 top-6 h-px bg-white/50 dark:bg-white/18" />
+            <div className="absolute inset-x-14 bottom-8 h-px bg-white/38 dark:bg-white/14" />
+            <div className="absolute left-9 top-6 h-14 w-14 border-l border-t border-white/55 dark:border-white/20" />
+            <div className="absolute bottom-8 right-14 h-16 w-16 border-b border-r border-white/45 dark:border-white/16" />
+            <div className="absolute right-12 top-10 h-40 w-40 bg-accent-primary/10 blur-3xl dark:bg-accent-primary/14" />
+            <div className="absolute inset-x-10 top-5 h-24 rounded-full blur-3xl" style={{ backgroundColor: "var(--report-halo)" }} />
             <div className="relative flex items-center justify-center">
               <div
                 className="relative flex h-[360px] w-[360px] items-center justify-center rounded-full"

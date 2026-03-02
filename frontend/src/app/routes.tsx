@@ -6,8 +6,13 @@ import { MapPage } from "./pages/MapPage";
 import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
 import { IncidentDetailsPage } from "./pages/IncidentDetails";
+import { AuthPage } from "./pages/Auth";
 
 export const router = createBrowserRouter([
+  {
+    path: "/auth",
+    Component: AuthPage,
+  },
   {
     path: "/",
     Component: RootLayout,

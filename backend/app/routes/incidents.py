@@ -1,6 +1,6 @@
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
-from backend.app.schemas.incidents import IncidentRequest, IncidentResponse
+from app.schemas.incidents import IncidentRequest, IncidentResponse
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 from app.models.triage import IncidentReport

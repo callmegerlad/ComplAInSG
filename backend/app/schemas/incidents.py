@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
+from datetime import datetime
 
 
 class IncidentRequest(BaseModel):
@@ -50,6 +51,7 @@ class IncidentResponse(BaseModel):
         }
     )
 
+
 class NearbyIncidentItem(BaseModel):
     incident_id: str
     location: Optional[str] = None
@@ -61,3 +63,35 @@ class NearbyIncidentItem(BaseModel):
 
 class NearbyIncidentsResponse(BaseModel):
     nearby_incidents: List[NearbyIncidentItem]
+
+
+class IncidentDetailResponse(BaseModel):
+    """Detailed response for a single incident report."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    location_text: str
+    description: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+    # Triage info (optional if not triaged yet)
+    final_triage: Optional[dict] = None
+
+
+class IncidentListResponse(BaseModel):
+    """Response for listing multiple incidents."""
+    total: int
+    incidents: List[IncidentDetailResponse]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "total": 2,
+                "incidents": []
+            }
+        }
+    )

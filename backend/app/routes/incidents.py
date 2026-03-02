@@ -1,9 +1,9 @@
 from uuid import uuid4
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, HTTPException
 from app.schemas.incident_schemas import IncidentRequest, IncidentResponse
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
-from app.models.triage import IncidentReport
+from app.models.triage import IncidentReport, FinalTriage
 from app.models.media import MediaAsset
 from app.core.database import get_db
 from sqlalchemy.orm import Session
@@ -51,7 +51,6 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(incident)
     if saved_path:
-
         media = MediaAsset(
         id=str(uuid4()),
         report_id=incident.id,
@@ -62,8 +61,21 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         db.add(media)
         db.commit()
         db.refresh(media) 
+    triage_entry = FinalTriage(
+        report_id=incident.id,
+        final_severity=final.final_severity,
+        confidence=final.confidence,
+        incident_type=final.incident_type,
+        routing_target=final.routing_target,
+        user_next_steps=final.user_next_steps,
+        followup_questions=final.followup_questions,
+        responder_summary=final.responder_summary,
+        applied_overrides=final.applied_overrides
+    )
+    db.add(triage_entry)
+    db.commit()
+    db.refresh(triage_entry)
 
-    
     if radius > 0:
         payload = {
             "type": "ALERT",

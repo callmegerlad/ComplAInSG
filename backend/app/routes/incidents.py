@@ -1,3 +1,4 @@
+import asyncio
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
@@ -8,9 +9,11 @@ from app.models.triage import IncidentReport, FinalTriage
 from app.models.media import MediaAsset
 from app.core.database import get_db
 from sqlalchemy.orm import Session
-from app.utills.media import save_base64_image
+from app.media.media import save_base64_image
 from pathlib import Path as FilePath
 from app.services.incident_nearby import fetch_nearby_incidents
+from app.dependencies import get_current_user
+from app.models.users import User
 
 
 
@@ -30,7 +33,11 @@ def severity_radius(sev):
 
 
 @incidents_router.post("/triage")
-async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
+async def triage(
+    req: IncidentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
 
     incident_id = str(uuid4())
     saved_path = None
@@ -40,11 +47,21 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
             saved_path = save_base64_image(req.image_url, UPLOAD_DIR)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
-    final, vision, text_triage, metadata = await run_triage_pipeline(
-        req.location,
-        req.description,
-        req.image_url
-    )
+    try:
+        final, vision, text_triage, metadata = await asyncio.wait_for(
+            run_triage_pipeline(req.location, req.description, req.image_url),
+            timeout=90.0,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail="AI triage pipeline timed out after 90 seconds. Please try again.",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI triage pipeline failed: {exc}",
+        )
 
     radius = severity_radius(final.final_severity)
     incident = IncidentReport(
@@ -52,7 +69,9 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         location_text=req.location,
         description=req.description,
         latitude=req.lat,
-        longitude=req.lng,)
+        longitude=req.lng,
+        reporter_id=str(current_user.id),
+    )
     
     db.add(incident)
     db.commit()

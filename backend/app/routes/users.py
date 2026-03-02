@@ -126,6 +126,7 @@ def list_users(
     db: Session = Depends(get_db),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
+    _admin: User = Depends(get_admin_user),
 ):
     """List all users with pagination."""
     total = db.query(func.count(User.id)).scalar() or 0
@@ -139,7 +140,11 @@ def list_users(
 
 
 @users_router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: str, db: Session = Depends(get_db)):
+def get_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
     """Get a specific user by ID."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

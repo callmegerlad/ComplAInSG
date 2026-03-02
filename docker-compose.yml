@@ -27,6 +27,9 @@ services:
     container_name: complainsg-backend
     environment:
       DATABASE_URL: postgresql://complainsg:complainsg@postgres:5432/complainsg
+      # Explicit origins avoids relying on the Python default.
+      # pydantic-settings v2 parses list fields from env vars as JSON.
+      ALLOWED_ORIGINS: '["http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]'
     ports:
       - "8000:8000"
     depends_on:

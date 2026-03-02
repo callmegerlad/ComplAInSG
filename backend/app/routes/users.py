@@ -8,6 +8,7 @@ from app.dependencies import (
     get_current_user,
 )
 from app.models.users import User, UserRole
+from app.models.triage import IncidentReport
 from app.schemas.users import (
     AuthResponse,
     UserCreateRequest,
@@ -109,9 +110,15 @@ def login_user(payload: UserLoginRequest, db: Session = Depends(get_db)):
 
 
 @users_router.get("/me", response_model=UserResponse)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get the currently authenticated user's profile."""
-    return UserResponse.model_validate(current_user)
+    report_count = db.query(func.count(IncidentReport.id)).filter(
+        IncidentReport.reporter_id == current_user.id
+    ).scalar() or 0
+
+    user_data = UserResponse.model_validate(current_user)
+    user_data.report_count = report_count
+    return user_data
 
 
 @users_router.get("", response_model=UsersListResponse)

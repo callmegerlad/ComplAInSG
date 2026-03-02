@@ -64,6 +64,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    report_count: int = 0
 
 
 class AuthResponse(BaseModel):

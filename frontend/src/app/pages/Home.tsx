@@ -79,35 +79,51 @@ export function HomePage() {
           
           {/* Report Section */}
           <section className="relative flex items-center justify-center px-4 pb-10 pt-8">
+            <div
+              className="absolute inset-x-4 inset-y-0 rounded-[22px] border border-border-subtle/60"
+              style={{
+                background: "var(--report-backdrop)",
+                boxShadow: "var(--report-backdrop-shadow)",
+              }}
+            />
+            <div
+              className="absolute inset-x-6 inset-y-3 rounded-[18px] opacity-100"
+              style={{ backgroundImage: "var(--report-backdrop-pattern)" }}
+            />
+            <div className="absolute inset-x-8 top-8 h-px bg-white/50 dark:bg-white/18" />
+            <div className="absolute inset-x-12 bottom-10 h-px bg-white/38 dark:bg-white/14" />
+            <div className="absolute left-8 top-8 h-16 w-16 border-l border-t border-white/55 dark:border-white/20" />
+            <div className="absolute bottom-10 right-12 h-20 w-20 border-b border-r border-white/45 dark:border-white/16" />
+            <div className="absolute right-10 top-12 h-44 w-44 bg-accent-primary/10 blur-3xl dark:bg-accent-primary/14" />
             <div className="absolute inset-x-8 top-6 h-28 rounded-full blur-3xl" style={{ backgroundColor: "var(--report-halo)" }} />
             <div className="relative flex items-center justify-center">
               <div
-                className="relative flex h-[320px] w-[320px] items-center justify-center rounded-full"
+                className="relative flex h-[360px] w-[360px] items-center justify-center rounded-full"
               >
                 <div
                   className="absolute inset-0 rounded-full animate-[ripple_2.4s_ease-out_infinite]"
                   style={{ border: "1px solid var(--report-ring-strong)" }}
                 />
                 <div
-                  className="absolute inset-[30px] rounded-full animate-[ripple_2.4s_ease-out_0.4s_infinite]"
+                  className="absolute inset-[34px] rounded-full animate-[ripple_2.4s_ease-out_0.4s_infinite]"
                   style={{ border: "1px solid var(--report-ring-soft)" }}
                 />
                 <div
-                  className="relative z-10 flex h-[244px] w-[244px] items-center justify-center rounded-full bg-surface-1"
+                  className="relative z-10 flex h-[276px] w-[276px] items-center justify-center rounded-full bg-surface-1"
                   style={{ boxShadow: "var(--report-shell-shadow)" }}
                 >
                   <button
                     onClick={() => setIsRecordDrawerOpen(true)}
-                    className="flex h-[196px] w-[196px] flex-col items-center justify-center gap-3 rounded-full text-white transition-transform duration-150 active:scale-[0.96]"
+                    className="flex h-[224px] w-[224px] flex-col items-center justify-center gap-3.5 rounded-full text-white transition-transform duration-150 active:scale-[0.96]"
                     style={{
                       background: "var(--report-button-gradient)",
                       boxShadow: "var(--report-button-shadow)",
                     }}
                     aria-label="Open record flow"
                   >
-                    <span className="material-symbols-outlined !text-[56px]">warning</span>
-                    <span className="inline-flex items-center gap-2 text-[15px] font-semibold tracking-[0.16em]">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                    <span className="material-symbols-outlined !text-[64px]">warning</span>
+                    <span className="inline-flex items-center gap-2 text-[16px] font-semibold tracking-[0.18em]">
+                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
                       REPORT
                     </span>
                   </button>
@@ -194,7 +210,7 @@ export function HomePage() {
         </div>
       </div>
       <DrawerContent className="h-[85vh] bg-surface-1 rounded-t-2xl">
-        <RecordFlow startAtCamera />
+        <RecordFlow />
       </DrawerContent>
       <style>{`
         @keyframes ripple {

@@ -17,6 +17,7 @@ const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
 
 type RecordFlowProps = {
   initialCategory?: CategoryType | null;
+  startAtCamera?: boolean;
 };
 
 export function RecordFlow({ initialCategory = null, startAtCamera = false }: RecordFlowProps) {

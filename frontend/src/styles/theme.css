@@ -31,6 +31,12 @@
   --success: #2EAD76;
   --success-subtle: #D4F3E7;
 
+  --report-backdrop: linear-gradient(135deg, rgba(237,243,252,0.96) 0%, rgba(224,233,247,0.98) 52%, rgba(210,224,244,0.98) 100%);
+  --report-backdrop-pattern:
+    linear-gradient(145deg, rgba(80,125,188,0.26) 0%, rgba(80,125,188,0.12) 24%, rgba(80,125,188,0) 24%),
+    linear-gradient(325deg, rgba(63,106,168,0.18) 0%, rgba(63,106,168,0.08) 22%, rgba(63,106,168,0) 22%),
+    linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0) 46%);
+  --report-backdrop-shadow: 0 18px 42px rgba(80, 125, 188, 0.14);
   --report-surface: linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(232,238,248,0.98) 100%);
   --report-halo: rgba(80, 125, 188, 0.10);
   --report-ring-strong: rgba(80, 125, 188, 0.20);
@@ -80,6 +86,12 @@
   --success: #35C483;
   --success-subtle: #0E3324;
 
+  --report-backdrop: linear-gradient(135deg, rgba(28,40,58,0.98) 0%, rgba(23,35,52,0.98) 54%, rgba(19,29,44,0.98) 100%);
+  --report-backdrop-pattern:
+    linear-gradient(145deg, rgba(124,166,221,0.24) 0%, rgba(124,166,221,0.10) 24%, rgba(124,166,221,0) 24%),
+    linear-gradient(325deg, rgba(80,125,188,0.20) 0%, rgba(80,125,188,0.08) 22%, rgba(80,125,188,0) 22%),
+    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 44%);
+  --report-backdrop-shadow: 0 20px 48px rgba(0, 0, 0, 0.32);
   --report-surface: linear-gradient(180deg, rgba(25,35,52,0.96) 0%, rgba(20,30,46,0.98) 100%);
   --report-halo: rgba(106, 149, 206, 0.18);
   --report-ring-strong: rgba(106, 149, 206, 0.34);

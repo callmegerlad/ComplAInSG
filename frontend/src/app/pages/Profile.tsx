@@ -124,7 +124,7 @@ export function ProfilePage() {
             onClick={() => {
               if (item.label === "Sign Out") {
                 logout();
-                navigate("/auth", { replace: true });
+                
               }
             }}
             className={`

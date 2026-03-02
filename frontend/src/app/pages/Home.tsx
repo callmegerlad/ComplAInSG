@@ -1,17 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { AlertBanner } from "../components/home/AlertBanner";
 import { Incident } from "../components/home/IncidentCard";
+import { IncidentCarousel } from "../components/home/IncidentCarousel";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 import { incidents as allIncidents } from "@/lib/incidents";
 
 export function HomePage() {
   const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false);
-  const incidents: Incident[] = allIncidents.slice(0, 3);
+  const incidents: Incident[] = allIncidents.slice(0, 8);
   const recommendedIncident = incidents[0];
 
   return (
@@ -31,7 +29,7 @@ export function HomePage() {
         </div>
         
         {/* Scrollable Content */}
-        <div className="flex flex-1 flex-col pb-8">
+        <div className="flex flex-1 flex-col">
           
           {/* Report Section */}
           <section className="relative flex items-center justify-center px-4 pb-6 pt-4">
@@ -89,7 +87,7 @@ export function HomePage() {
           </section>
           
           {/* Recent Reports Section */}
-          <section className="flex-1 rounded-t-[28px] bg-surface-1 px-4 pb-8 pt-6 shadow-[0_-6px_24px_rgba(27,42,65,0.06)]">
+          <section className="mx-4 mb-4 rounded-[24px] bg-surface-1 px-4 pb-5 pt-6 shadow-[0_2px_20px_rgba(27,42,65,0.10)]">
             <div className="pb-0">
                <h2 className="text-text-primary text-[20px] font-bold tracking-tight">Nearby Incidents</h2>
                <p className="mt-1 text-[13px] text-text-secondary">
@@ -97,123 +95,8 @@ export function HomePage() {
                </p>
             </div>
 
-            <article className="mt-4 overflow-hidden rounded-[24px] bg-surface-2 shadow-card">
-              <div
-                className="h-1.5 w-full"
-                style={{ backgroundColor: getSeverityColor(recommendedIncident.severity) }}
-              />
-              <div className="flex min-h-[132px]">
-                <div className="relative w-[42%] shrink-0">
-                  {recommendedIncident.imageUrl ? (
-                    <ImageWithFallback
-                      src={recommendedIncident.imageUrl}
-                      alt={recommendedIncident.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  ) : null}
-                </div>
-                <div className="flex flex-1 flex-col justify-between p-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <CategoryPill
-                        label={recommendedIncident.category}
-                        tone={recommendedIncident.categoryColor}
-                      />
-                      <SeverityPill
-                        label={recommendedIncident.severity}
-                        tone={getSeverityColor(recommendedIncident.severity)}
-                      />
-                    </div>
-                    <h3 className="mt-1 text-[18px] font-bold leading-tight text-text-primary">
-                      {recommendedIncident.location}
-                    </h3>
-                    <p className="mt-2 text-[13px] leading-5 text-text-secondary">
-                      {recommendedIncident.title}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <InfoBadgeLight icon="route" label={recommendedIncident.distance} />
-                    <InfoBadgeLight icon="schedule" label={recommendedIncident.timestamp} />
-                    <InfoBadgeLight icon="groups" label={`${recommendedIncident.responders} responding`} />
-                  </div>
-                  <IncidentCredibility incidentId={recommendedIncident.id} className="mt-3" />
-                </div>
-              </div>
-              <div className="px-4 pb-4">
-                <Link
-                  to={`/incidents/${recommendedIncident.id}`}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-accent-primary px-3 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-accent-hover"
-                >
-                  Details
-                </Link>
-              </div>
-            </article>
+            <IncidentCarousel incidents={incidents} />
             
-            <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {incidents.map((incident) => (
-                <article
-                  key={incident.id}
-                  className="group relative min-h-[220px] min-w-[220px] overflow-hidden rounded-[24px] bg-surface-2 shadow-card"
-                >
-                  <div
-                    className="absolute left-0 right-0 top-0 z-10 h-1.5"
-                    style={{ backgroundColor: getSeverityColor(incident.severity) }}
-                  />
-                  {incident.imageUrl ? (
-                    <ImageWithFallback
-                      src={incident.imageUrl}
-                      alt={incident.title}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                  ) : null}
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,24,44,0.10)_0%,rgba(10,24,44,0.3)_40%,rgba(10,24,44,0.82)_100%)]" />
-                  <div className="relative flex h-full flex-col justify-between p-3 text-white">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CategoryPill
-                          label={incident.category}
-                          tone={incident.categoryColor}
-                        />
-                        <SeverityPill
-                          label={incident.severity}
-                          tone={getSeverityColor(incident.severity)}
-                        />
-                      </div>
-                      <div className="flex items-start justify-between gap-2">
-                        <InfoBadge icon="route" label={incident.distance} />
-                        <InfoBadge icon="schedule" label={incident.timestamp} />
-                      </div>
-                    </div>
-                    <div className="mt-auto flex flex-1 flex-col justify-end">
-                      <h3 className="line-clamp-3 text-[16px] font-bold leading-tight">
-                        {incident.title}
-                      </h3>
-                      <div className="mt-2 space-y-2">
-                        <InfoBadge icon="location_on" label={incident.location} />
-                      </div>
-                      <div className="mt-4 space-y-2 pt-1">
-                        <IncidentCredibility
-                          incidentId={incident.id}
-                          compact
-                          inverted
-                        />
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="pr-2 text-[11px] font-medium text-white/88">
-                            {incident.responders} responding
-                          </span>
-                          <Link
-                            to={`/incidents/${incident.id}`}
-                            className="inline-flex min-w-[68px] items-center justify-center rounded-full bg-accent-primary px-3 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
-                          >
-                            Details
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
           </section>
           
         </div>
@@ -232,52 +115,3 @@ export function HomePage() {
   );
 }
 
-function InfoBadge({ icon, label }: { icon: string; label: string }) {
-  return (
-    <div className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full bg-white/16 px-2.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-sm">
-      <span className="material-symbols-outlined !text-[14px]">{icon}</span>
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
-
-function InfoBadgeLight({ icon, label }: { icon: string; label: string }) {
-  return (
-    <div className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full bg-accent-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary">
-      <span className="material-symbols-outlined !text-[14px] text-accent-primary">{icon}</span>
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
-
-function CategoryPill({ label, tone }: { label: string; tone: string }) {
-  return (
-    <span
-      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
-      style={{
-        backgroundColor: tone,
-      }}
-    >
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function SeverityPill({ label, tone }: { label: string; tone: string }) {
-  return (
-    <span
-      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-white"
-      style={{
-        backgroundColor: tone,
-      }}
-    >
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function getSeverityColor(severity: Incident["severity"]) {
-  if (severity === "High") return "var(--cat-fight)";
-  if (severity === "Medium") return "var(--cat-transport)";
-  return "var(--success)";
-}

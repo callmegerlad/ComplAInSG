@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+
+const BANNER_DURATION_MS = 8000;
+
 interface AlertBannerProps {
   message: string;
   distance: string;
@@ -5,6 +9,15 @@ interface AlertBannerProps {
 }
 
 export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(false), BANNER_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [message, distance]); // reset timer if alert changes
+
+  if (!visible) return null;
+
   return (
     <div className="w-full sticky top-30 z-40 group cursor-pointer" onClick={onClick}>
       <div className="bg-[#d93a3a] text-white px-4 py-3 flex items-center justify-between shadow-md relative z-10">

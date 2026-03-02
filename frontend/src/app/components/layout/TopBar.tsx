@@ -43,14 +43,14 @@ export function TopBar({ showSearch = true }: TopBarProps) {
       </div>
       
       {showSearch && (
-        <div className="px-4 py-3 pb-4">
+        <div className="px-4 pb-2">
           <label className="flex flex-col w-full">
             <div className="flex w-full flex-1 items-center rounded-xl h-12 border border-accent-primary/30 focus-within:border-accent-primary bg-surface-1 transition-colors overflow-hidden">
               <div className="text-text-disabled flex items-center justify-center pl-4">
                 <span className="material-symbols-outlined text-[20px]">search</span>
               </div>
               <input 
-                className="flex w-full min-w-0 flex-1 text-text-primary focus:outline-0 bg-transparent h-full placeholder:text-text-disabled px-4 pl-2 text-[14px] font-normal" 
+                className="flex w-full min-w-0 flex-1 text-text-primary focus:outline-0 bg-transparent h-full placeholder:text-text-disabled px-4 pl-2 text-[20px] font-normal" 
                 placeholder="Search incidents or locations" 
               />
             </div>

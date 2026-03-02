@@ -9,8 +9,7 @@ from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.utills.media import save_base64_image
 from pathlib import Path as FilePath
-
-
+from app.services.incident_nearby import fetch_nearby_incidents
 incidents_router = APIRouter(prefix="/incidents")
 
 
@@ -106,6 +105,15 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         final=final.model_dump(),
         metadata=metadata.model_dump() if metadata else None
     )
-
+@incidents_router.get("/nearby", response_model=NearbyIncidentsResponse)
+def get_nearby_incidents(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radius_m: int = Query(1000, ge=50, le=50000),
+    limit: int = Query(30, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    nearby = fetch_nearby_incidents(db, lat, lng, radius_m, limit)
+    return {"nearby_incidents": nearby}
 
 

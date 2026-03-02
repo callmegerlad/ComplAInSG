@@ -2,7 +2,7 @@ name: complainsg
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgis/postgis:16-3.4
     container_name: complainsg-db
     environment:
       POSTGRES_USER: complainsg

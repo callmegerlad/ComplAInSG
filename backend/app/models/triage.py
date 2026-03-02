@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column, Enum, Text, String, Boolean, DateTime, ForeignKey, Float, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-
+from geoalchemy2 import Geography
 from app.utils import utcnow
 from app.core.database import Base
 
@@ -170,7 +170,7 @@ class IncidentReport(Base):
     # Optional lat/lng for geofencing / clustering
     latitude = Column(Float)
     longitude = Column(Float)
-
+    location = Column(Geography(geometry_type="POINT", srid=4326), nullable=True)
     status = Column(Enum(ReportStatus),
                     default=ReportStatus.SUBMITTED, index=True)
 

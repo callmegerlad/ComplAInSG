@@ -8,7 +8,7 @@ from app.dependencies import (
     get_current_user,
 )
 from app.models.users import User, UserRole
-from app.schemas.user_schemas import (
+from app.schemas.users import (
     AuthResponse,
     UserCreateRequest,
     UserLoginRequest,

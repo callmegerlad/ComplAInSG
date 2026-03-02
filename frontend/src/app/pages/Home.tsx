@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TopBar } from "../components/layout/TopBar";
 import { AlertBanner } from "../components/home/AlertBanner";
-import { Incident } from "../components/home/IncidentCard";
+import type { Incident } from "../components/home/IncidentCard";
 import { IncidentCarousel } from "../components/home/IncidentCarousel";
 import { IncidentTicker } from "../components/home/IncidentTicker";
 import { RecordFlow } from "../components/record/RecordFlow";
@@ -11,96 +11,104 @@ import { useCurrentLocation } from "@/lib/location";
 
 const CONTINUOUS_VIEW_KEY = "complainsg-continuous-view";
 
+/** Alert queue — only the first is shown; dismissed alerts are removed. */
+const INITIAL_ALERTS = [
+  { id: "a1", message: "Fight reported", distance: "80m away" },
+];
+
 export function HomePage() {
   const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false);
+  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const continuousView = localStorage.getItem(CONTINUOUS_VIEW_KEY) !== "false";
   const incidents: Incident[] = allIncidents.slice(0, 8);
-  const currentLocation = useCurrentLocation();
+  const { label: currentLocation, lastUpdated } = useCurrentLocation();
+
+  const formatTime = (d: Date | null) => {
+    if (!d) return "";
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  };
+
+  const dismissCurrentAlert = () => setAlerts((prev) => prev.slice(1));
+  const activeAlert = alerts[0] ?? null;
 
   return (
-    <Drawer
-      open={isRecordDrawerOpen}
-      onOpenChange={(open) => {
-        setIsRecordDrawerOpen(open);
-      }}
-    >
-      {/*
-       * h-full: fills the parent scroll container's visible height (= viewport
-       * minus nav bar).  overflow-hidden: prevents any child from causing
-       * the page to scroll — content stretches/shrinks to fit.
-       */}
+    <Drawer open={isRecordDrawerOpen} onOpenChange={setIsRecordDrawerOpen}>
+      {/* h-full + overflow-hidden: fill viewport, no page scroll */}
       <div className="flex h-full flex-col overflow-hidden bg-bg-primary">
 
-        {/* ── TopBar (no search — saves vertical space for content) ──────── */}
-        {/* position:relative lets the AlertBanner overlay hang below it. */}
+        {/* ── TopBar + alert overlay ──────────────────────────────────────── */}
         <div className="relative shrink-0 z-20">
-          <TopBar showSearch={false} />
-
-          {/* AlertBanner: absolute overlay, slides up+fades when timer expires */}
+          <TopBar showSearch={true} />
           <div
             className="absolute left-0 right-0 top-full z-30 pointer-events-none"
             aria-live="polite"
           >
-            <AlertBanner message="Fight reported" distance="80m away" />
+            {activeAlert && (
+              <AlertBanner
+                key={activeAlert.id}
+                message={activeAlert.message}
+                distance={activeAlert.distance}
+                onDismiss={dismissCurrentAlert}
+              />
+            )}
           </div>
         </div>
 
-        {/* ── Main content area ─────────────────────────────────────────────*/}
-        <div className="flex flex-1 flex-col min-h-0">
+        {/* ── Main content: two 50 / 50 sections, always top → down ─────── */}
+        <div className="flex flex-1 min-h-0 flex-col gap-2 p-2">
 
-          {/* FAST REPORT section — fixed height, never scrolls away */}
-          {/* Circle scaled to 240 px (from the original 360 px) so everything
-              fits on iPhone SE and up without the TopBar search bar. */}
-          <section className="relative shrink-0 flex items-center justify-center px-4 py-3">
+          {/* ── FAST REPORT section ── 50 % ───────────────────────────────── */}
+          <section className="relative flex flex-1 min-h-0 items-center justify-center rounded-[22px] overflow-hidden">
+            {/* decorative background */}
             <div
-              className="absolute inset-x-5 bottom-2 top-1 rounded-[22px] border border-border-subtle/60"
+              className="absolute inset-0 rounded-[22px] border border-border-subtle/60"
               style={{
                 background: "var(--report-backdrop)",
                 boxShadow: "var(--report-backdrop-shadow)",
               }}
             />
             <div
-              className="absolute inset-x-7 bottom-5 top-4 rounded-[18px] opacity-100"
+              className="absolute inset-2 rounded-[18px] opacity-100"
               style={{ backgroundImage: "var(--report-backdrop-pattern)" }}
             />
-            <div className="absolute inset-x-9 top-6 h-px bg-white/50 dark:bg-white/18" />
-            <div className="absolute inset-x-14 bottom-8 h-px bg-white/38 dark:bg-white/14" />
-            <div className="absolute left-9 top-6 h-10 w-10 border-l border-t border-white/55 dark:border-white/20" />
-            <div className="absolute bottom-6 right-10 h-10 w-10 border-b border-r border-white/45 dark:border-white/16" />
-            <div className="absolute right-10 top-8 h-28 w-28 bg-accent-primary/10 blur-3xl dark:bg-accent-primary/14" />
+            <div className="absolute inset-x-6 top-4 h-px bg-white/50 dark:bg-white/18" />
+            <div className="absolute inset-x-8 bottom-6 h-px bg-white/38 dark:bg-white/14" />
+            <div className="absolute left-6 top-4 h-8 w-8 border-l border-t border-white/55 dark:border-white/20" />
+            <div className="absolute bottom-5 right-7 h-8 w-8 border-b border-r border-white/45 dark:border-white/16" />
+            <div className="absolute right-8 top-6 h-24 w-24 bg-accent-primary/10 blur-3xl dark:bg-accent-primary/14" />
             <div
-              className="absolute inset-x-10 top-4 h-16 rounded-full blur-3xl"
+              className="absolute inset-x-8 top-3 h-14 rounded-full blur-3xl"
               style={{ backgroundColor: "var(--report-halo)" }}
             />
 
-            {/* Circle container — 240 px (was 360 px) */}
-            <div className="relative flex h-[240px] w-[240px] items-center justify-center rounded-full">
+            {/* Circle — dynamically sized via percentage limits */}
+            <div className="relative flex aspect-square w-full h-full max-h-[85%] max-w-[85%] items-center justify-center rounded-full">
               <div
                 className="absolute inset-0 rounded-full animate-[ripple_2.4s_ease-out_infinite]"
                 style={{ border: "1px solid var(--report-ring-strong)" }}
               />
               <div
-                className="absolute inset-[23px] rounded-full animate-[ripple_2.4s_ease-out_0.4s_infinite]"
+                className="absolute inset-[12%] rounded-full animate-[ripple_2.4s_ease-out_0.4s_infinite]"
                 style={{ border: "1px solid var(--report-ring-soft)" }}
               />
-              {/* Shell (276 → 184 px) */}
+              {/* Shell */}
               <div
-                className="relative z-10 flex h-[184px] w-[184px] items-center justify-center rounded-full bg-surface-1"
+                className="relative z-10 flex h-[76%] w-[76%] items-center justify-center rounded-full bg-surface-1"
                 style={{ boxShadow: "var(--report-shell-shadow)" }}
               >
-                {/* Button (224 → 150 px) */}
+                {/* Button */}
                 <button
                   onClick={() => setIsRecordDrawerOpen(true)}
-                  className="flex h-[150px] w-[150px] flex-col items-center justify-center gap-2 rounded-full text-white transition-transform duration-150 active:scale-[0.96]"
+                  className="flex h-[80%] w-[80%] flex-col items-center justify-center gap-1.5 rounded-full text-white transition-transform duration-150 active:scale-[0.96]"
                   style={{
                     background: "var(--report-button-gradient)",
                     boxShadow: "var(--report-button-shadow)",
                   }}
                   aria-label="Open record flow"
                 >
-                  <span className="material-symbols-outlined !text-[42px]">warning</span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.18em]">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  <span className="material-symbols-outlined !text-[36px]">warning</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-[0.18em]">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                     FAST REPORT
                   </span>
                 </button>
@@ -108,28 +116,32 @@ export function HomePage() {
             </div>
           </section>
 
-          {/* Nearby Incidents section — fills remaining space (grows on tall
-              screens, stays minimum-height on smaller screens) */}
-          <section className="flex-1 min-h-0 mx-4 mb-3 rounded-[24px] bg-surface-1 px-4 pb-4 pt-4 shadow-[0_2px_20px_rgba(27,42,65,0.10)] flex flex-col">
+          {/* ── Nearby Incidents section ── 50 % ──────────────────────────── */}
+          <section className="flex flex-1 min-h-0 flex-col rounded-[24px] bg-surface-1 px-4 pb-3 pt-3 shadow-[0_2px_20px_rgba(27,42,65,0.10)]">
             <div className="shrink-0">
-              <h2 className="text-text-primary text-[18px] font-bold tracking-tight">
+              <h2 className="text-text-primary text-[16px] font-bold tracking-tight">
                 Nearby Incidents
               </h2>
-              <p className="mt-0.5 text-[12px] text-text-secondary flex items-center gap-1">
+              <p className="mt-0.5 text-[11px] text-text-secondary flex items-center gap-1">
                 <span className="material-symbols-outlined !text-[13px] text-accent-primary">
                   my_location
                 </span>
-                <span className="truncate">{currentLocation}</span>
+                <span className="truncate flex-1">{currentLocation}</span>
+                {lastUpdated && (
+                  <span className="shrink-0 text-text-disabled text-[10px] ml-auto">
+                    {formatTime(lastUpdated)}
+                  </span>
+                )}
               </p>
             </div>
 
             {/* Incident view — ticker OR carousel depending on user setting */}
             {continuousView ? (
-              <div className="mt-3 -mx-4 overflow-hidden">
+              <div className="mt-2 -mx-4 flex-1 min-h-0 overflow-hidden">
                 <IncidentTicker incidents={incidents} />
               </div>
             ) : (
-              <div className="flex-1 min-h-0 mt-3">
+              <div className="flex-1 min-h-0 mt-2">
                 <IncidentCarousel incidents={incidents} fillHeight />
               </div>
             )}

@@ -330,8 +330,9 @@ export function IncidentCarousel({
           </div>
         )}
 
-        {/* Current / entering card */}
+        {/* Current / entering card — key forces React to remount on index change */}
         <div
+          key={current}
           className={cn(fillHeight && "h-full")}
           style={{
             transform: sliding
@@ -433,6 +434,13 @@ function CardContent({
         fillHeight && "flex flex-col h-full",
       )}
     >
+      {/* Tap-hint banner — at the top */}
+      <div className="shrink-0 bg-surface-2/80 px-3 py-1">
+        <p className="text-center text-[10px] text-text-disabled tracking-wide select-none">
+          Tap card for details · Hold to pause
+        </p>
+      </div>
+
       {/* severity stripe */}
       <div
         className="h-1.5 w-full shrink-0"
@@ -455,26 +463,24 @@ function CardContent({
         />
       </div>
 
-      {/* card body */}
+      {/* card body — LANDSCAPE layout: image left, info right */}
       <div
         className={cn(
-          "flex",
-          fillHeight ? "flex-1 min-h-0" : "min-h-[132px]",
+          "flex flex-row",
+          fillHeight ? "flex-1 min-h-0 overflow-hidden" : "min-h-[132px]",
         )}
       >
-        {/* thumbnail */}
-        <div className="relative w-[42%] shrink-0">
-          {incident.imageUrl && (
-            <ImageWithFallback
-              src={incident.imageUrl}
-              alt={incident.title}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
+        {/* thumbnail — fixed 42% width, stretches to full height */}
+        <div className="w-[42%] shrink-0 overflow-hidden bg-surface-1">
+          <ImageWithFallback
+            src={incident.imageUrl ?? ""}
+            alt={incident.title}
+            className="h-full w-full object-cover block"
+          />
         </div>
 
         {/* info column */}
-        <div className="flex flex-1 flex-col justify-between p-3 min-w-0">
+        <div className="flex flex-1 flex-col justify-between p-3 min-w-0 min-h-0 overflow-auto">
           <div>
             <div className="flex flex-wrap items-center gap-1.5">
               <CategoryPill label={incident.category} tone={incident.categoryColor} />
@@ -504,12 +510,6 @@ function CardContent({
         </div>
       </div>
 
-      {/* Tap-hint footer (replaces the old Details button) */}
-      <div className="shrink-0 px-3 pb-3 pt-1">
-        <p className="text-center text-[10px] text-text-disabled tracking-wide select-none">
-          Tap card for details · Hold to pause
-        </p>
-      </div>
     </article>
   );
 }

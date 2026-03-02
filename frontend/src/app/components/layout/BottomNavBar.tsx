@@ -20,7 +20,7 @@ export function BottomNavBar() {
         to={path}
         className={cn(
           "flex flex-1 flex-col items-center justify-center gap-1",
-          active ? "text-accent-primary" : "text-text-disabled"
+          active ? "text-accent-primary dark:text-white" : "text-text-disabled"
         )}
       >
         <div className="flex h-6 items-center justify-center">
@@ -36,8 +36,7 @@ export function BottomNavBar() {
   };
 
   return (
-    <>
-      <div className="fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-surface-1/95 backdrop-blur-md px-4 pb-6 pt-2 z-20">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border-subtle bg-surface-1/95 backdrop-blur-md px-4 pb-2 pt-2 z-20">
         <div className="flex gap-2 items-end">
           <NavItem path="/" icon="home" label="Home" />
           <NavItem path="/map" icon="map" label="Map" />
@@ -50,9 +49,6 @@ export function BottomNavBar() {
           <NavItem path="/profile" icon="person" label="Profile" />
         </div>
       </div>
-      {/* Spacer for fixed bottom nav */}
-      <div className="h-20" />
-    </>
   );
 }
 

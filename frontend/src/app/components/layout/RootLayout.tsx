@@ -149,7 +149,7 @@ export function RootLayout() {
       {/* ── Scrollable page content ───────────────────────────────────────── */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto pb-28 scroll-smooth"
+        className="flex-1 overflow-y-auto pb-20 scroll-smooth"
         style={{ paddingTop: indicatorH > 0 ? indicatorH : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

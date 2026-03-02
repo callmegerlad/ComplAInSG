@@ -8,9 +8,11 @@ interface AlertBannerProps {
   message: string;
   distance: string;
   onClick?: () => void;
+  /** Called when the banner dismisses itself (timer expired OR close button). */
+  onDismiss?: () => void;
 }
 
-export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
+export function AlertBanner({ message, distance, onClick, onDismiss }: AlertBannerProps) {
   const [phase, setPhase] = useState<"visible" | "exiting" | "hidden">("visible");
 
   useEffect(() => {
@@ -20,7 +22,10 @@ export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
       () => setPhase("exiting"),
       BANNER_DURATION_MS - EXIT_ANIM_MS,
     );
-    const hideTimer = setTimeout(() => setPhase("hidden"), BANNER_DURATION_MS);
+    const hideTimer = setTimeout(() => {
+      setPhase("hidden");
+      onDismiss?.();
+    }, BANNER_DURATION_MS);
     return () => {
       clearTimeout(exitTimer);
       clearTimeout(hideTimer);
@@ -28,6 +33,12 @@ export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
   }, [message, distance]);
 
   if (phase === "hidden") return null;
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPhase("hidden");
+    onDismiss?.();
+  };
 
   return (
     // pointer-events-auto so the banner itself is clickable even though its
@@ -51,9 +62,20 @@ export function AlertBanner({ message, distance, onClick }: AlertBannerProps) {
             {message} · {distance}
           </span>
         </div>
-        <div className="flex items-center text-white/80">
-          <span className="mr-0.5 font-semibold text-[12px]">View</span>
-          <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center text-white/80">
+            <span className="mr-0.5 font-semibold text-[12px]">View</span>
+            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+          </div>
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+            aria-label="Dismiss alert"
+          >
+            <span className="material-symbols-outlined text-[14px]">close</span>
+          </button>
         </div>
       </div>
 

@@ -24,27 +24,55 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
   }
 }
 
-/** React hook that returns the user's current location as a display label. */
-export function useCurrentLocation(): string {
+/** React hook that returns the user's current location as a display label
+ *  and the time it was last refreshed.
+ *  Re-polls the position every POLL_INTERVAL_MS (10 s). */
+const POLL_INTERVAL_MS = 10_000;
+
+export interface LocationInfo {
+  label: string;
+  lastUpdated: Date | null;
+}
+
+export function useCurrentLocation(): LocationInfo {
   const [label, setLabel] = useState<string>("Fetching location…");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!navigator?.geolocation) {
       setLabel(SG_FALLBACK);
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const name = await reverseGeocode(
-          pos.coords.latitude,
-          pos.coords.longitude,
-        );
-        setLabel(name);
-      },
-      () => setLabel(SG_FALLBACK),
-      { timeout: 6000, maximumAge: 60_000 },
-    );
+
+    let cancelled = false;
+
+    const fetchLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          if (cancelled) return;
+          const name = await reverseGeocode(
+            pos.coords.latitude,
+            pos.coords.longitude,
+          );
+          if (!cancelled) {
+            setLabel(name);
+            setLastUpdated(new Date());
+          }
+        },
+        () => { if (!cancelled) { setLabel(SG_FALLBACK); setLastUpdated(new Date()); } },
+        { timeout: 6000, maximumAge: 10_000 },
+      );
+    };
+
+    // Fetch immediately, then every 10 s
+    fetchLocation();
+    const id = setInterval(fetchLocation, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
-  return label;
+  return { label, lastUpdated };
 }

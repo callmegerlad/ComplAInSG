@@ -92,13 +92,18 @@ function VoteButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+      }}
       aria-label={label}
       className={cn(
         "flex items-center justify-center rounded-full border border-border-subtle bg-surface-1 text-text-secondary transition-colors hover:bg-accent-subtle hover:text-accent-primary",
         inverted && "border-white/12 bg-white/12 text-white/88 hover:bg-white/18 hover:text-white",
         compact ? "h-8 w-8" : "h-9 w-9",
-        active && "border-accent-primary bg-accent-primary text-white hover:bg-accent-primary hover:text-white",
+        active && icon === "thumb_up" && "border-green-500 bg-green-500 text-white hover:bg-green-600 hover:text-white",
+        active && icon === "thumb_down" && "border-red-500 bg-red-500 text-white hover:bg-red-600 hover:text-white",
       )}
     >
       <span className={cn("material-symbols-outlined", compact ? "text-[15px]" : "text-[16px]")}>

@@ -24,6 +24,23 @@ export const defaultIncidentFilters: IncidentFilterState = {
   category: "All",
 };
 
+// ─── Category definitions ──────────────────────────────────────────────────
+// Single source of truth for incident categories used across the app.
+// Add or remove entries here to update all screens automatically.
+export type IncidentCategory = {
+  label: string;
+  color: string; // CSS value (variable or hex)
+  icon: string;  // material-symbols-outlined name
+};
+
+export const INCIDENT_CATEGORIES: IncidentCategory[] = [
+  { label: "Fight/Assault",   color: "var(--cat-fight)",     icon: "local_police" },
+  { label: "Transport Fault", color: "var(--cat-transport)", icon: "train" },
+  { label: "Medical Emerg",   color: "var(--cat-medical)",   icon: "emergency" },
+  { label: "Fire/Hazard",     color: "var(--cat-fire)",      icon: "local_fire_department" },
+  { label: "Others",          color: "var(--text-disabled)",  icon: "more_horiz" },
+];
+
 export const incidents: IncidentWithMeta[] = [
   {
     id: "1",

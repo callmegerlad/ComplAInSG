@@ -1,11 +1,28 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
-import { getIncidentById } from "@/lib/incidents";
+import { getIncidentById, type IncidentWithMeta } from "@/lib/incidents";
+
+interface NewReportState {
+  isNewReport?: boolean;
+  triageData?: {
+    incident_id: string;
+    final: {
+      followup_questions: string[];
+      user_next_steps: string[];
+      routing_target: string;
+      responder_summary: string;
+      incident_type: string;
+      final_severity: string;
+    };
+  };
+  photoDataUrl?: string;
+  locationLabel?: string;
+}
 
 const FALLBACK_INCIDENT_IMAGE =
   "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=1200&auto=format&fit=crop";
@@ -35,7 +52,44 @@ const initialLiveUpdates = [
 export function IncidentDetailsPage() {
   const { incidentId } = useParams();
   const navigate = useNavigate();
-  const incident = incidentId ? getIncidentById(incidentId) : undefined;
+  const routerLocation = useLocation();
+  const routerState = routerLocation.state as NewReportState | null;
+  const isNewReport = routerState?.isNewReport === true;
+  const triageData = routerState?.triageData;
+
+  const staticIncident = incidentId ? getIncidentById(incidentId) : undefined;
+
+  // Build a synthetic incident for freshly submitted AI-triage reports
+  const syntheticIncident: IncidentWithMeta | undefined =
+    isNewReport && !staticIncident && triageData
+      ? {
+          id: triageData.incident_id,
+          category: triageData.final.incident_type?.replace(/_/g, " ") ?? "Incident",
+          categoryColor: "var(--cat-fight, #ef4444)",
+          categoryIcon: "report",
+          severity:
+            triageData.final.final_severity?.toLowerCase() === "high" ||
+            triageData.final.final_severity?.toLowerCase() === "critical"
+              ? "High"
+              : triageData.final.final_severity?.toLowerCase() === "medium"
+                ? "Medium"
+                : "Low",
+          location: routerState?.locationLabel ?? "Singapore",
+          distance: "—",
+          title:
+            triageData.final.incident_type?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) ??
+            "New Incident Report",
+          summary: triageData.final.responder_summary ?? "Report submitted for review.",
+          timestamp: "Just now",
+          responders: 0,
+          imageUrl: routerState?.photoDataUrl,
+          credibilityUpvotes: 0,
+          credibilityDownvotes: 0,
+        }
+      : undefined;
+
+  const incident = staticIncident ?? syntheticIncident;
+
   const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false);
   const [isOnMyWay, setIsOnMyWay] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -65,6 +119,17 @@ export function IncidentDetailsPage() {
     <Drawer open={isRecordDrawerOpen} onOpenChange={setIsRecordDrawerOpen}>
       <div className="flex min-h-full flex-col bg-bg-primary pb-24">
         <TopBar showSearch={false} />
+        {isNewReport && (
+          <div className="flex items-start gap-3 border-b border-success/20 bg-success/10 px-4 py-3">
+            <span className="material-symbols-outlined mt-0.5 text-[20px] text-success">check_circle</span>
+            <div>
+              <p className="text-[13px] font-bold text-success">Report submitted successfully!</p>
+              <p className="text-[12px] text-text-secondary">
+                Thank you for keeping your community safe. Relevant authorities have been notified.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="border-b border-border-subtle bg-surface-1 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
@@ -308,11 +373,7 @@ export function IncidentDetailsPage() {
       </div>
 
       <DrawerContent className="h-[92vh] max-w-md px-0">
-        <RecordFlow
-          startAtCamera
-          incidentContext={incident.title}
-          submitLabel="Upload to Incident"
-        />
+        <RecordFlow onClose={() => setIsRecordDrawerOpen(false)} />
       </DrawerContent>
     </Drawer>
   );

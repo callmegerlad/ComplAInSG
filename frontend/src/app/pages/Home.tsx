@@ -97,7 +97,7 @@ export function HomePage() {
           {/* Recommended to attend to Section */}
           <section className="flex flex-col rounded-[24px] bg-surface-1 px-4 pb-4 pt-3 shadow-[0_2px_20px_rgba(27,42,65,0.10)]">
               <div className="shrink-0">
-                <h2 className="text-text-primary text-[16px] font-bold tracking-tight">Recommended to attend to</h2>
+                <h2 className="text-text-primary text-[16px] font-bold tracking-tight">Incident needs your response!</h2>
                 <p className="mt-0.5 flex items-center gap-1 text-[11px] text-text-secondary">
                   <span className="material-symbols-outlined !text-[13px] text-accent-primary">
                     my_location
@@ -163,7 +163,7 @@ export function HomePage() {
             </section>
 
           {/* Nearby Incidents Section */}
-          <section className="flex h-[420px] flex-col rounded-[24px] bg-surface-1 px-4 pb-3 pt-3 shadow-[0_2px_20px_rgba(27,42,65,0.10)]">
+          <section className="flex h-[420px] flex-col rounded-[24px] bg-surface-1 px-4 pb-3 pt-3 shadow-[0_2px_20px_rgba(27,42,65,0.10)] overflow-hidden">
               <div className="shrink-0">
                 <h2 className="text-text-primary text-[16px] font-bold tracking-tight">
                   Nearby Incidents

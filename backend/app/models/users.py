@@ -36,10 +36,6 @@ class User(Base):
     reports = relationship(
         "IncidentReport",
         back_populates="reporter",
-        cascade="all, delete-orphan"
-    )
-    assigned_reports = relationship(
-        "IncidentReport",
-        back_populates="assigned_responder",
-        foreign_keys="IncidentReport.assigned_responder_id",
+        cascade="all, delete-orphan",
+        lazy="selectin"
     )

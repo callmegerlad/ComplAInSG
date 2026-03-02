@@ -17,9 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 def health():
-    return {"ok":True}
+    return {
+        "healthy": True
+    }
+
 
 app.include_router(incidents_router)
 app.include_router(ws_router)

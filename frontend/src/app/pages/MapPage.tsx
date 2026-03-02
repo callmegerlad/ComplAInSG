@@ -1,6 +1,7 @@
 import { TopBar } from "../components/layout/TopBar";
 import { IncidentCard } from "../components/home/IncidentCard";
 import { IncidentFilters } from "../components/incidents/IncidentFilters";
+import { OneMapMultiIncident } from "../components/map/OneMap";
 import { useState } from "react";
 import {
   defaultIncidentFilters,
@@ -19,22 +20,20 @@ export function MapPage() {
     <div className="flex min-h-full flex-col">
       <TopBar showSearch={true} />
       
-      {/* Map Layer - Placeholder */}
-      <div className="relative h-[42vh] min-h-64 w-full shrink-0 bg-bg-secondary flex items-center justify-center">
-        <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=Singapore&zoom=12&size=600x300&sensor=false')] bg-cover opacity-50 grayscale"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-                <div className="w-4 h-4 bg-accent-primary rounded-full border-2 border-white z-10 relative"></div>
-                <div className="w-9 h-9 bg-accent-primary/30 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-ping"></div>
-            </div>
-        </div>
-        
-        {/* Incident Pins */}
-        <div className="absolute top-1/4 left-1/4">
-             <div className="w-6 h-6 rounded-full bg-danger flex items-center justify-center border-2 border-white shadow-lg">
-                <span className="material-symbols-outlined text-white text-[12px]">local_police</span>
-             </div>
-        </div>
+      {/* Map Layer - OneMap Integration */}
+      <div className="relative h-[42vh] min-h-64 w-full shrink-0 bg-bg-secondary">
+        <OneMapMultiIncident
+          incidents={filteredIncidents.map((incident) => ({
+            id: incident.id,
+            title: incident.title,
+            location: incident.location,
+            lat: incident.lat || 1.3521,
+            lng: incident.lng || 103.8198,
+            severity: incident.severity,
+          }))}
+          zoomLevel={13}
+          className="h-full w-full"
+        />
       </div>
       
       {/* Content Layer */}

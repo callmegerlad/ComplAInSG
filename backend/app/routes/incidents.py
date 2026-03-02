@@ -1,6 +1,7 @@
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, Query
-from app.schemas.incidents import IncidentRequest, IncidentResponse, NearbyIncidentsResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
+from app.schemas.incidents import IncidentRequest, IncidentResponse, NearbyIncidentsResponse, IncidentDetailResponse, IncidentListResponse
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 from app.models.triage import IncidentReport, FinalTriage
@@ -10,7 +11,10 @@ from sqlalchemy.orm import Session
 from app.utills.media import save_base64_image
 from pathlib import Path as FilePath
 from app.services.incident_nearby import fetch_nearby_incidents
-incidents_router = APIRouter(prefix="/incidents")
+
+
+
+incidents_router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 
 UPLOAD_DIR = FilePath("uploads")
@@ -115,5 +119,39 @@ def get_nearby_incidents(
 ):
     nearby = fetch_nearby_incidents(db, lat, lng, radius_m, limit)
     return {"nearby_incidents": nearby}
+
+
+@incidents_router.get("", response_model=IncidentListResponse)
+def list_incidents(
+    db: Session = Depends(get_db),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    """List all incident reports with pagination."""
+    total = db.query(func.count(IncidentReport.id)).scalar() or 0
+    incidents = db.query(IncidentReport).order_by(
+        IncidentReport.created_at.desc()
+    ).offset(skip).limit(limit).all()
+
+    return IncidentListResponse(
+        total=total,
+        incidents=[IncidentDetailResponse.model_validate(incident) for incident in incidents]
+    )
+
+
+@incidents_router.get("/{incident_id}", response_model=IncidentDetailResponse)
+def get_incident(incident_id: str, db: Session = Depends(get_db)):
+    """Get a specific incident report by ID."""
+    incident = db.query(IncidentReport).filter(IncidentReport.id == incident_id).first()
+    
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Incident not found"
+        )
+    
+    return IncidentDetailResponse.model_validate(incident)
+
+
 
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/app/components/ui/drawer";
@@ -53,18 +54,16 @@ export function BottomNavBar() {
 }
 
 function RecordFlowTrigger() {
-    // This will trigger the Drawer for the record flow
-    // For now, we'll just link to a route or open a drawer
-    // The spec says it opens a sheet (Record Step 1)
+    const [open, setOpen] = useState(false);
     return (
-        <Drawer>
+        <Drawer open={open} onOpenChange={setOpen}>
             <DrawerTrigger asChild>
                 <button className="bg-danger text-white h-14 w-14 rounded-full shadow-lg shadow-danger/45 flex items-center justify-center active:scale-90 transition-transform mb-1">
-                    <span className="material-symbols-outlined !text-3xl">videocam</span>
+                    <span className="material-symbols-outlined !text-3xl">camera</span>
                 </button>
             </DrawerTrigger>
-            <DrawerContent className="h-[85vh] bg-surface-1 rounded-t-2xl">
-                <RecordFlow />
+            <DrawerContent className="h-[92vh] bg-surface-1 rounded-t-2xl">
+                <RecordFlow onClose={() => setOpen(false)} />
             </DrawerContent>
         </Drawer>
     );

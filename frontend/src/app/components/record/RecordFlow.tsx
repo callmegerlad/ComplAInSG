@@ -1,298 +1,204 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  DrawerClose,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/app/components/ui/drawer";
-import { CategoryCard, CategoryType } from "@/app/components/home/CategoryCard";
+﻿import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
+import { useCurrentLocation } from "@/lib/location";
 
-const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
-  { label: "Cleanliness", icon: "delete", colorVar: "var(--accent-primary)" },
-  { label: "Maintenance", icon: "build", colorVar: "var(--accent-primary)" },
-  { label: "Pests", icon: "pest_control", colorVar: "var(--accent-primary)" },
-  { label: "Roads & Drains", icon: "add_road", colorVar: "var(--accent-primary)" },
-  { label: "Trees & Plants", icon: "eco", colorVar: "var(--accent-primary)" },
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type FlowStep = "capture" | "confirm" | "loading" | "results";
+
+interface FinalTriageOutput {
+  followup_questions: string[];
+  user_next_steps: string[];
+  routing_target: string;
+  responder_summary: string;
+  incident_type: string;
+  final_severity: string;
+}
+
+interface TriageResponse {
+  incident_id: string;
+  final: FinalTriageOutput;
+  metadata: unknown;
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { label: "Cleanliness", icon: "delete_sweep", color: "#f59e0b" },
+  { label: "Maintenance", icon: "build", color: "#6366f1" },
+  { label: "Pests", icon: "pest_control", color: "#84cc16" },
+  { label: "Roads & Drains", icon: "traffic", color: "#0ea5e9" },
+  { label: "Trees & Plants", icon: "park", color: "#22c55e" },
+  { label: "Others", icon: "more_horiz", color: "#9ca3af" },
 ];
 
-type RecordFlowProps = {
-  initialCategory?: CategoryType | null;
-  startAtCamera?: boolean;
-  incidentContext?: string;
-  submitLabel?: string;
-};
+// ─── Component ────────────────────────────────────────────────────────────────
 
-function getSupportedMimeType(): string {
-  if (typeof MediaRecorder === "undefined") {
-    return "";
-  }
-
-  const mimeTypes = [
-    "video/webm;codecs=vp9,opus",
-    "video/webm;codecs=vp8,opus",
-    "video/webm;codecs=h264,opus",
-    "video/webm",
-  ];
-
-  return mimeTypes.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? "";
+interface RecordFlowProps {
+  onClose?: () => void;
 }
 
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
-}
+export function RecordFlow({ onClose }: RecordFlowProps) {
+  const navigate = useNavigate();
+  const location = useCurrentLocation();
 
-export function RecordFlow({
-  initialCategory = null,
-  startAtCamera = false,
-  incidentContext,
-  submitLabel = "Submit Report",
-}: RecordFlowProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(initialCategory || startAtCamera ? 2 : 1);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(initialCategory);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPreparingCamera, setIsPreparingCamera] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
+  const [step, setStep] = useState<FlowStep>("capture");
+  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
   const [description, setDescription] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(true);
-  const [recordingDurationSeconds, setRecordingDurationSeconds] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
+  const [followupAnswers, setFollowupAnswers] = useState<Record<number, "yes" | "no" | null>>({});
+  const [additionalNote, setAdditionalNote] = useState("");
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const liveVideoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const recordingIntervalRef = useRef<number | null>(null);
+  // Camera refs
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [isPreparingCamera, setIsPreparingCamera] = useState(true);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
-  function stopDurationTimer() {
-    if (recordingIntervalRef.current !== null) {
-      window.clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
+  // ── Camera helpers ──────────────────────────────────────────────────────────
+
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
-  }
+  };
 
-  function stopStream() {
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-    mediaStreamRef.current = null;
-
-    if (liveVideoRef.current) {
-      liveVideoRef.current.srcObject = null;
-    }
-  }
-
-  function resetRecordingState() {
-    setIsRecording(false);
-    setRecordingDurationSeconds(0);
-    stopDurationTimer();
-
-    if (recordedVideoUrl) {
-      URL.revokeObjectURL(recordedVideoUrl);
-      setRecordedVideoUrl(null);
-    }
-  }
-
-  async function startCamera() {
-    if (
-      typeof navigator === "undefined" ||
-      !navigator.mediaDevices ||
-      typeof navigator.mediaDevices.getUserMedia !== "function"
-    ) {
-      setCameraError("Camera recording is not supported in this browser.");
-      return;
-    }
-
+  const startCamera = async () => {
     setIsPreparingCamera(true);
     setCameraError(null);
-
     try {
-      stopStream();
-
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: true,
+        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
       });
-
-      mediaStreamRef.current = stream;
-
-      if (liveVideoRef.current) {
-        liveVideoRef.current.srcObject = stream;
-        await liveVideoRef.current.play();
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
+      setIsPreparingCamera(false);
     } catch {
-      setCameraError("We couldn't access your camera or microphone. Check browser permissions and try again.");
-    } finally {
+      setCameraError("Unable to access camera. Please grant camera permissions and try again.");
       setIsPreparingCamera(false);
     }
-  }
+  };
 
-  function stopRecording() {
-    const recorder = mediaRecorderRef.current;
-
-    if (!recorder || recorder.state === "inactive") {
-      return;
-    }
-
-    recorder.stop();
-    setIsRecording(false);
-    stopDurationTimer();
-  }
-
-  function startRecording() {
-    const stream = mediaStreamRef.current;
-
-    if (!stream) {
-      setCameraError("Camera is not ready yet. Please wait or retry.");
-      return;
-    }
-
-    if (typeof MediaRecorder === "undefined") {
-      setCameraError("Video recording is not supported in this browser.");
-      return;
-    }
-
-    const mimeType = getSupportedMimeType();
-
-    try {
-      recordedChunksRef.current = [];
-      const recorder = mimeType
-        ? new MediaRecorder(stream, { mimeType })
-        : new MediaRecorder(stream);
-
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (event: BlobEvent) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        const blobType = mimeType || "video/webm";
-        const blob = new Blob(recordedChunksRef.current, { type: blobType });
-
-        if (blob.size === 0) {
-          setCameraError("Recording failed. Please try again.");
-          return;
-        }
-
-        const nextUrl = URL.createObjectURL(blob);
-        setRecordedVideoUrl((currentUrl) => {
-          if (currentUrl) {
-            URL.revokeObjectURL(currentUrl);
-          }
-
-          return nextUrl;
-        });
-        stopStream();
-        setStep(3);
-      };
-
-      recorder.onerror = () => {
-        setCameraError("Recording failed unexpectedly. Please try again.");
-        setIsRecording(false);
-        stopDurationTimer();
-      };
-
-      recorder.start(250);
-      setCameraError(null);
-      setIsRecording(true);
-      setRecordingDurationSeconds(0);
-      stopDurationTimer();
-      recordingIntervalRef.current = window.setInterval(() => {
-        setRecordingDurationSeconds((current) => current + 1);
-      }, 1000);
-    } catch {
-      setCameraError("Unable to start recording on this device.");
-    }
-  }
-
-  useEffect(() => {
-    setSelectedCategory(initialCategory);
-    setStep(initialCategory || startAtCamera ? 2 : 1);
-    setDescription("");
-    setIsAnonymous(true);
-    setCameraError(null);
-    resetRecordingState();
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    setPhotoDataUrl(dataUrl);
     stopStream();
-  }, [initialCategory, startAtCamera]);
+    setStep("confirm");
+  };
 
+  // ── Effects ─────────────────────────────────────────────────────────────────
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (step === 2) {
+    if (step === "capture") {
       void startCamera();
-      return;
-    }
-
-    if (isRecording) {
-      stopRecording();
     } else {
       stopStream();
     }
+    return () => stopStream();
   }, [step]);
 
-  useEffect(() => {
-    return () => {
-      stopDurationTimer();
-      stopStream();
+  // ── API call ────────────────────────────────────────────────────────────────
 
-      if (recordedVideoUrl) {
-        URL.revokeObjectURL(recordedVideoUrl);
+  const handleSubmitReport = async () => {
+    setApiError(null);
+    setStep("loading");
+    try {
+      const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+      const res = await fetch(`${apiBase}/incidents/triage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: location.label,
+          description: description.trim() || "No description provided",
+          image_url: photoDataUrl,
+          lat: location.lat,
+          lng: location.lng,
+          accuracy_m: location.accuracy,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`Server error ${res.status}`);
       }
-    };
-  }, [recordedVideoUrl]);
+      const data = (await res.json()) as TriageResponse;
+      setTriageResult(data);
+      const initialAnswers: Record<number, "yes" | "no" | null> = {};
+      data.final.followup_questions.forEach((_, i) => {
+        initialAnswers[i] = null;
+      });
+      setFollowupAnswers(initialAnswers);
+      setStep("results");
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setStep("confirm");
+    }
+  };
 
-  if (step === 1) {
-    return (
-      <div className="flex h-full flex-col">
-        <DrawerHeader>
-          <DrawerTitle className="text-center">What&apos;s happening?</DrawerTitle>
-          <DrawerDescription className="text-center">
-            Select a category to report
-          </DrawerDescription>
-        </DrawerHeader>
+  // ── Final submit ────────────────────────────────────────────────────────────
 
-        <div className="grid grid-cols-2 gap-3 overflow-y-auto px-4 py-4">
-          {categories.map((cat) => (
-            <CategoryCard
-              key={cat.label}
-              label={cat.label}
-              icon={cat.icon}
-              colorVar={cat.colorVar}
-              onClick={() => {
-                setSelectedCategory(cat.label);
-                setStep(2);
-              }}
-            />
-          ))}
-        </div>
+  const handleFinalSubmit = () => {
+    if (!triageResult) return;
+    onClose?.();
+    navigate(`/incidents/${triageResult.incident_id}`, {
+      state: {
+        isNewReport: true,
+        triageData: triageResult,
+        photoDataUrl,
+        additionalNote,
+        followupAnswers,
+        locationLabel: location.label,
+      },
+    });
+  };
 
-        <div className="mt-auto flex justify-center p-4 pb-8">
-          <button className="text-[13px] text-text-secondary underline">Other</button>
-        </div>
-      </div>
-    );
-  }
+  // ── Severity colour helper ──────────────────────────────────────────────────
 
-  if (step === 2) {
+  const severityBadgeClass = (sev: string) => {
+    const s = sev?.toLowerCase();
+    if (s === "high" || s === "critical") return "text-danger bg-danger/10";
+    if (s === "medium") return "text-warning bg-warning/10";
+    return "text-success bg-success/10";
+  };
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  // STEP: capture ──────────────────────────────────────────────────────────────
+  if (step === "capture") {
     return (
       <div className="relative flex h-full flex-col bg-black text-white">
+        {/* Live camera feed */}
         <div className="absolute inset-0 overflow-hidden bg-zinc-950">
           <video
-            ref={liveVideoRef}
+            ref={videoRef}
             className="h-full w-full object-cover"
             autoPlay
             muted
             playsInline
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
           {(isPreparingCamera || cameraError) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-6 text-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/75 px-6 text-center">
               <div className="max-w-xs space-y-3">
                 <span className="material-symbols-outlined text-[56px] text-white/70">
-                  {cameraError ? "videocam_off" : "progress_activity"}
+                  {cameraError ? "no_photography" : "progress_activity"}
                 </span>
                 <p className="text-[13px] text-white/85">
-                  {cameraError ?? "Requesting camera and microphone access..."}
+                  {cameraError ?? "Requesting camera access\u2026"}
                 </p>
                 {cameraError && (
                   <button
@@ -300,7 +206,7 @@ export function RecordFlow({
                     onClick={() => void startCamera()}
                     className="rounded-full bg-white px-4 py-2 text-[13px] font-bold text-black"
                   >
-                    Retry camera
+                    Retry
                   </button>
                 )}
               </div>
@@ -308,196 +214,367 @@ export function RecordFlow({
           )}
         </div>
 
+        {/* Hidden canvas for capture */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Top bar */}
         <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-4">
-          <DrawerClose asChild={startAtCamera && !selectedCategory}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50"
+          >
+            <span className="material-symbols-outlined text-white">close</span>
+          </button>
+          <div className="rounded-full bg-black/50 px-3 py-1 text-[12px] font-bold">
+            Report Incident
+          </div>
+          <div className="h-9 w-9" />
+        </div>
+
+        {/* Bottom controls */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center gap-5 pb-10 pt-6">
+          {location.label && location.label !== "Fetching location\u2026" && (
+            <div className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5">
+              <span className="material-symbols-outlined text-[14px] text-success">location_on</span>
+              <span className="text-[12px] text-white/90">{location.label}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            disabled={isPreparingCamera || !!cameraError}
+            onClick={capturePhoto}
+            className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-white/20 backdrop-blur-sm transition-transform active:scale-90 disabled:opacity-40"
+          >
+            <div className="h-14 w-14 rounded-full bg-white" />
+          </button>
+          <p className="text-[11px] text-white/60">Tap to take a photo</p>
+        </div>
+      </div>
+    );
+  }
+
+  // STEP: confirm ──────────────────────────────────────────────────────────────
+  if (step === "confirm") {
+    return (
+      <div className="flex h-full flex-col overflow-y-auto bg-surface-1">
+        {/* Header */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-border-subtle px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setStep("capture")}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2"
+          >
+            <span className="material-symbols-outlined text-text-secondary">arrow_back</span>
+          </button>
+          <div className="flex-1">
+            <h2 className="text-[16px] font-bold text-text-primary">Confirm Report</h2>
+            <p className="text-[11px] text-text-secondary">Review details before submitting</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2"
+          >
+            <span className="material-symbols-outlined text-text-secondary">close</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+          {/* API error */}
+          {apiError && (
+            <div className="flex items-center gap-2 rounded-xl bg-danger/10 p-3 text-danger">
+              <span className="material-symbols-outlined text-[18px]">error</span>
+              <span className="text-[13px]">{apiError}</span>
+            </div>
+          )}
+
+          {/* Photo preview */}
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-surface-2 shadow-card">
+            {photoDataUrl ? (
+              <img src={photoDataUrl} alt="Captured photo" className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <span className="material-symbols-outlined text-[48px] text-text-disabled">image</span>
+              </div>
+            )}
             <button
               type="button"
-              onClick={() => {
-                stopRecording();
-                if (!startAtCamera || selectedCategory) {
-                  setStep(1);
-                }
-              }}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40"
+              onClick={() => setStep("capture")}
+              className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/55 px-3 py-1.5 text-[12px] font-bold text-white"
             >
-              <span className="material-symbols-outlined">close</span>
+              <span className="material-symbols-outlined text-[14px]">refresh</span>
+              Retake
             </button>
-          </DrawerClose>
-          <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
-            {incidentContext ?? selectedCategory ?? "Report"}
           </div>
-          <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
-            {isRecording ? formatDuration(recordingDurationSeconds) : "Ready"}
+
+          {/* Location */}
+          <div className="flex items-center gap-2 rounded-xl bg-surface-2 px-3 py-3">
+            <span className="material-symbols-outlined text-[18px] text-success">location_on</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary">
+                Location
+              </p>
+              <p className="truncate text-[13px] font-medium text-text-primary">{location.label}</p>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label
+              htmlFor="rf-description"
+              className="mb-1.5 block text-[12px] font-semibold text-text-primary"
+            >
+              Description{" "}
+              <span className="font-normal text-text-secondary">(optional)</span>
+            </label>
+            <textarea
+              id="rf-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what you see — what happened, exact location, any urgent risks..."
+              className="min-h-[96px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <p className="mb-2 text-[12px] font-semibold text-text-primary">
+              Category{" "}
+              <span className="font-normal text-text-secondary">(optional)</span>
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.label}
+                  type="button"
+                  onClick={() =>
+                    setSelectedCategory(selectedCategory === cat.label ? null : cat.label)
+                  }
+                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all ${
+                    selectedCategory === cat.label
+                      ? "border-transparent shadow-sm"
+                      : "border-border-subtle bg-surface-2"
+                  }`}
+                  style={
+                    selectedCategory === cat.label
+                      ? { backgroundColor: `${cat.color}20`, borderColor: cat.color }
+                      : {}
+                  }
+                >
+                  <span
+                    className="material-symbols-outlined text-[22px]"
+                    style={{ color: selectedCategory === cat.label ? cat.color : undefined }}
+                  >
+                    {cat.icon}
+                  </span>
+                  <span className="text-[10px] font-semibold leading-tight text-text-primary">
+                    {cat.label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-4 rounded-t-2xl bg-black/80 p-6 backdrop-blur-md">
-          <div className="flex items-center gap-2 text-white/80">
-            <span className="material-symbols-outlined text-[16px] text-success">
-              location_on
-            </span>
-            <span className="text-[12px]">{incidentContext ?? "Near Marina Bay Sands"}</span>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                resetRecordingState();
-                void startCamera();
-              }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"
-            >
-              <span className="material-symbols-outlined">refresh</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (isRecording) {
-                  stopRecording();
-                } else {
-                  startRecording();
-                }
-              }}
-              disabled={isPreparingCamera || !!cameraError}
-              className={`flex h-16 w-16 items-center justify-center rounded-full border-4 border-white transition-all ${
-                isRecording ? "scale-110 bg-danger" : "bg-danger"
-              }`}
-            >
-              {isRecording ? (
-                <div className="h-6 w-6 rounded-sm bg-white" />
-              ) : (
-                <div className="h-6 w-6 rounded-full bg-white" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsAnonymous((current) => !current);
-              }}
-              className="flex h-10 min-w-10 items-center justify-center rounded-full bg-white/10 px-3"
-            >
-              <span className="material-symbols-outlined text-[18px]">
-                {isAnonymous ? "visibility_off" : "visibility"}
-              </span>
-            </button>
-          </div>
-
-          <p className="text-center text-[10px] text-white/60">
-            {isRecording
-              ? "Recording in progress. Tap again to stop."
-              : "Tap to start recording video evidence for this incident."}
+        {/* Submit button */}
+        <div className="mt-auto shrink-0 border-t border-border-subtle p-4 pb-6">
+          <button
+            type="button"
+            onClick={() => void handleSubmitReport()}
+            className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95"
+          >
+            Submit to AI for Processing
+          </button>
+          <p className="mt-2 text-center text-[11px] text-text-secondary">
+            Our AI will analyse your photo and generate a report
           </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto bg-surface-1 p-4">
-      <DrawerHeader className="p-0 pb-2">
-        <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-border-subtle" />
-        <DrawerTitle>{incidentContext ? "Attach Video to Incident" : "Review Report"}</DrawerTitle>
-        <DrawerDescription>
-          {incidentContext
-            ? "Check the recording and upload it to the existing incident thread."
-            : "Check the recording and add supporting details before submission."}
-        </DrawerDescription>
-      </DrawerHeader>
+  // STEP: loading ──────────────────────────────────────────────────────────────
+  if (step === "loading") {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-6 bg-surface-1 px-8 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent-primary/10">
+          <span className="material-symbols-outlined animate-spin text-[40px] text-accent-primary">
+            progress_activity
+          </span>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-[20px] font-bold text-text-primary">Processing your report...</h2>
+          <p className="text-[14px] leading-6 text-text-secondary">
+            Our AI is analysing your photo and incident details.
+            <br />
+            Please stay on this screen.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 rounded-2xl bg-warning/10 px-4 py-3 text-warning">
+          <span className="material-symbols-outlined text-[20px]">warning</span>
+          <p className="text-[12px] font-semibold">Do not close or navigate away</p>
+        </div>
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-2 w-2 animate-pulse rounded-full bg-accent-primary"
+              style={{ animationDelay: `${i * 0.3}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-surface-2">
-        {recordedVideoUrl ? (
-          <video
-            src={recordedVideoUrl}
-            className="h-full w-full bg-black object-cover"
-            controls
-            playsInline
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="material-symbols-outlined text-[48px] text-accent-primary">
-              play_circle
-            </span>
+  // STEP: results ──────────────────────────────────────────────────────────────
+  if (step === "results" && triageResult) {
+    const { final } = triageResult;
+    return (
+      <div className="flex h-full flex-col overflow-y-auto bg-surface-1">
+        {/* Header */}
+        <div className="flex shrink-0 items-center gap-3 border-b border-border-subtle px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-success/15 text-success">
+            <span className="material-symbols-outlined text-[20px]">check_circle</span>
           </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 rounded-xl bg-success-subtle p-3 text-success">
-        <span className="material-symbols-outlined text-[18px]">check_circle</span>
-        <span className="text-[13px] font-bold">
-          {incidentContext ? "Video captured and ready to upload" : "Recording saved and ready for review"}
-        </span>
-      </div>
-
-      <div className="rounded-xl border border-border-subtle bg-surface-2 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-bold text-text-primary">
-              {incidentContext ?? selectedCategory ?? "Report"}
-            </p>
-            <p className="mt-1 text-[12px] text-text-secondary">
-              {recordingDurationSeconds > 0
-                ? `Recorded video length: ${formatDuration(recordingDurationSeconds)}`
-                : "Recorded evidence attached"}
-            </p>
+          <div className="flex-1">
+            <h2 className="text-[16px] font-bold text-text-primary">AI Analysis Complete</h2>
+            <p className="text-[11px] text-text-secondary">Review and confirm your report</p>
           </div>
           <button
             type="button"
-            onClick={() => {
-              resetRecordingState();
-              setStep(2);
-            }}
-            className="rounded-full border border-border-subtle px-3 py-1.5 text-[12px] font-bold text-text-primary"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2"
           >
-            Retake
+            <span className="material-symbols-outlined text-text-secondary">close</span>
           </button>
         </div>
-      </div>
 
-      <textarea
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-        className="min-h-[100px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] placeholder:text-text-disabled focus:outline-accent-primary"
-        placeholder={
-          incidentContext
-            ? "Add a note for responders about what this video shows..."
-            : "Add context: what happened, exact location, direction of travel, and any urgent risks..."
-        }
-      />
+        <div className="flex flex-col gap-4 p-4">
+          {/* AI Summary */}
+          <div className="rounded-2xl border border-border-subtle bg-surface-2 p-4 shadow-card">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                AI Assessment
+              </p>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${severityBadgeClass(final.final_severity)}`}
+              >
+                {final.final_severity} Severity
+              </span>
+            </div>
+            <p className="text-[15px] font-semibold capitalize text-text-primary">
+              {final.incident_type?.replace(/_/g, " ").toLowerCase() ?? "Incident detected"}
+            </p>
+            {final.responder_summary && (
+              <p className="mt-2 text-[13px] leading-5 text-text-secondary">
+                {final.responder_summary}
+              </p>
+            )}
+            {final.routing_target && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[14px] text-accent-primary">send</span>
+                <span className="text-[12px] font-semibold text-accent-primary">
+                  Routing to: {final.routing_target.replace(/_/g, " ")}
+                </span>
+              </div>
+            )}
+          </div>
 
-      <button
-        type="button"
-        onClick={() => setIsAnonymous((current) => !current)}
-        className="flex items-center justify-between py-2"
-      >
-        <span className="text-[14px] font-medium text-text-primary">Post anonymously</span>
-        <div
-          className={`relative h-6 w-10 rounded-full transition-colors ${
-            isAnonymous ? "bg-accent-primary" : "bg-border-subtle"
-          }`}
-        >
-          <div
-            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-              isAnonymous ? "translate-x-5" : "translate-x-1"
-            }`}
-          />
+          {/* User next steps */}
+          {final.user_next_steps?.length > 0 && (
+            <div className="rounded-2xl border border-border-subtle bg-surface-1 p-4 shadow-card">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                Recommended Actions
+              </p>
+              <ul className="space-y-2">
+                {final.user_next_steps.map((nextStep, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-primary/15 text-[10px] font-bold text-accent-primary">
+                      {i + 1}
+                    </span>
+                    <p className="text-[13px] leading-5 text-text-primary">{nextStep}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Follow-up questions (binary YES / NO) */}
+          {final.followup_questions?.length > 0 && (
+            <div className="rounded-2xl border border-border-subtle bg-surface-2 p-4 shadow-card">
+              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary">
+                Quick Follow-up Questions
+              </p>
+              <div className="space-y-4">
+                {final.followup_questions.map((q, i) => (
+                  <div key={i}>
+                    <p className="mb-2 text-[13px] font-medium leading-5 text-text-primary">{q}</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFollowupAnswers((prev) => ({ ...prev, [i]: "yes" }))}
+                        className={`flex-1 rounded-xl py-2 text-[13px] font-bold transition-all ${
+                          followupAnswers[i] === "yes"
+                            ? "bg-success text-white shadow-sm"
+                            : "border border-border-subtle bg-surface-1 text-text-secondary"
+                        }`}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFollowupAnswers((prev) => ({ ...prev, [i]: "no" }))}
+                        className={`flex-1 rounded-xl py-2 text-[13px] font-bold transition-all ${
+                          followupAnswers[i] === "no"
+                            ? "bg-danger text-white shadow-sm"
+                            : "border border-border-subtle bg-surface-1 text-text-secondary"
+                        }`}
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Additional note */}
+          <div>
+            <label
+              htmlFor="rf-note"
+              className="mb-1.5 block text-[12px] font-semibold text-text-primary"
+            >
+              Anything else to add?
+            </label>
+            <textarea
+              id="rf-note"
+              value={additionalNote}
+              onChange={(e) => setAdditionalNote(e.target.value)}
+              placeholder="Any extra details for responders..."
+              className="min-h-[80px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+            />
+          </div>
         </div>
-      </button>
 
-      <div className="mt-auto pt-4">
-        <DrawerClose asChild>
-          <button className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95">
-            {submitLabel}
+        {/* Final submit */}
+        <div className="mt-auto shrink-0 border-t border-border-subtle p-4 pb-6">
+          <button
+            type="button"
+            onClick={handleFinalSubmit}
+            className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95"
+          >
+            Submit Report
           </button>
-        </DrawerClose>
-        <p className="mt-2 text-center text-[11px] text-text-secondary">
-          {incidentContext
-            ? "This video will be attached to the current incident thread."
-            : "Will alert people within 250m and notify SPF"}
-        </p>
+          <p className="mt-2 text-center text-[11px] text-text-secondary">
+            Your report will be sent to the relevant authorities
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }

@@ -32,11 +32,17 @@ const POLL_INTERVAL_MS = 10_000;
 export interface LocationInfo {
   label: string;
   lastUpdated: Date | null;
+  lat: number | null;
+  lng: number | null;
+  accuracy: number | null;
 }
 
 export function useCurrentLocation(): LocationInfo {
   const [label, setLabel] = useState<string>("Fetching location…");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
 
   useEffect(() => {
     if (!navigator?.geolocation) {
@@ -56,6 +62,9 @@ export function useCurrentLocation(): LocationInfo {
           );
           if (!cancelled) {
             setLabel(name);
+            setLat(pos.coords.latitude);
+            setLng(pos.coords.longitude);
+            setAccuracy(pos.coords.accuracy);
             setLastUpdated(new Date());
           }
         },
@@ -74,5 +83,5 @@ export function useCurrentLocation(): LocationInfo {
     };
   }, []);
 
-  return { label, lastUpdated };
+  return { label, lastUpdated, lat, lng, accuracy };
 }

@@ -2,10 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { applyTheme, getPreferredTheme } from "@/lib/theme";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { getUserInitials } from "@/lib/auth";
 
 export function ProfilePage() {
   const [isDarkMode, setIsDarkMode] = useState(() => getPreferredTheme() === "dark");
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const initials = getUserInitials(user);
+  const displayName = user?.display_name?.trim() || "Community User";
+  const email = user?.email ?? "";
 
   return (
     <div className="flex flex-col min-h-full pb-8">
@@ -14,13 +20,14 @@ export function ProfilePage() {
       {/* Header Block */}
       <div className="px-6 py-6 flex flex-col items-center gap-3">
         <div className="w-[72px] h-[72px] rounded-full bg-accent-subtle border-[3px] border-accent-primary/20 flex items-center justify-center text-accent-primary font-bold text-[24px]">
-          JD
+          {initials}
         </div>
         <div className="flex flex-col items-center">
-          <h2 className="text-[18px] font-semibold text-text-primary">John Doe</h2>
+          <h2 className="text-[18px] font-semibold text-text-primary">{displayName}</h2>
+          <p className="mt-1 text-[13px] text-text-secondary">{email}</p>
           <div className="flex items-center gap-1 mt-1 text-accent-primary">
             <span className="material-symbols-outlined text-[14px]">verified_user</span>
-            <span className="text-[12px] font-semibold">Singpass Verified</span>
+            <span className="text-[12px] font-semibold">Authenticated Account</span>
           </div>
         </div>
       </div>
@@ -85,6 +92,7 @@ export function ProfilePage() {
             type="button"
             onClick={() => {
               if (item.label === "Sign Out") {
+                logout();
                 navigate("/auth");
               }
             }}

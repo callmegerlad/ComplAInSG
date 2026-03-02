@@ -1,61 +1,16 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { AlertBanner } from "../components/home/AlertBanner";
 import { Incident } from "../components/home/IncidentCard";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-
-const incidents: Incident[] = [
-  {
-    id: '1',
-    category: 'Fight/Assault',
-    categoryColor: 'var(--cat-fight)',
-    categoryIcon: 'local_police',
-    severity: 'High',
-    location: 'Ang Mo Kio Ave 3',
-    distance: '80m',
-    title: 'Fight reported at Block 423',
-    summary: 'Content verified by AI. Two individuals involved in a physical altercation near the void deck.',
-    timestamp: '2 min ago',
-    status: 'In Progress',
-    responders: 4,
-    imageUrl: 'https://images.unsplash.com/photo-1563266914-94073574828f?q=80&w=200&auto=format&fit=crop'
-  },
-  {
-    id: '2',
-    category: 'Transport Fault',
-    categoryColor: 'var(--cat-transport)',
-    categoryIcon: 'train',
-    severity: 'Medium',
-    location: 'Orchard MRT',
-    distance: '1.2km',
-    title: 'Escalator Breakdown',
-    summary: 'Escalator B at Exit 3 is currently non-functional. Technicians have been dispatched.',
-    timestamp: '15 min ago',
-    status: 'In Progress',
-    responders: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1471623320832-752e8bbf8413?q=80&w=200&auto=format&fit=crop'
-  },
-  {
-    id: '3',
-    category: 'Maintenance',
-    categoryColor: 'var(--accent-primary)',
-    categoryIcon: 'construction',
-    severity: 'Low',
-    location: 'Tampines St 21',
-    distance: '2.4km',
-    title: 'Street light flickering near junction',
-    summary: 'Residents reported intermittent lighting affecting the pedestrian crossing.',
-    timestamp: '28 min ago',
-    status: 'Queued',
-    responders: 1,
-    imageUrl: 'https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=200&auto=format&fit=crop'
-  }
-];
+import { incidents as allIncidents } from "@/lib/incidents";
 
 export function HomePage() {
   const [isRecordDrawerOpen, setIsRecordDrawerOpen] = useState(false);
+  const incidents: Incident[] = allIncidents.slice(0, 3);
   const recommendedIncident = incidents[0];
 
   return (
@@ -142,6 +97,10 @@ export function HomePage() {
             </div>
 
             <article className="mt-4 overflow-hidden rounded-[24px] bg-surface-2 shadow-card">
+              <div
+                className="h-1.5 w-full"
+                style={{ backgroundColor: getSeverityColor(recommendedIncident.severity) }}
+              />
               <div className="flex min-h-[132px]">
                 <div className="relative w-[42%] shrink-0">
                   {recommendedIncident.imageUrl ? (
@@ -154,9 +113,16 @@ export function HomePage() {
                 </div>
                 <div className="flex flex-1 flex-col justify-between p-4">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-primary">
-                      Recommended Location
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CategoryPill
+                        label={recommendedIncident.category}
+                        tone={recommendedIncident.categoryColor}
+                      />
+                      <SeverityPill
+                        label={recommendedIncident.severity}
+                        tone={getSeverityColor(recommendedIncident.severity)}
+                      />
+                    </div>
                     <h3 className="mt-1 text-[18px] font-bold leading-tight text-text-primary">
                       {recommendedIncident.location}
                     </h3>
@@ -171,6 +137,14 @@ export function HomePage() {
                   </div>
                 </div>
               </div>
+              <div className="px-4 pb-4">
+                <Link
+                  to={`/incidents/${recommendedIncident.id}`}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-accent-primary px-3 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-accent-hover"
+                >
+                  Details
+                </Link>
+              </div>
             </article>
             
             <div className="mt-4 flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -179,6 +153,10 @@ export function HomePage() {
                   key={incident.id}
                   className="group relative min-h-[220px] min-w-[220px] overflow-hidden rounded-[24px] bg-surface-2 shadow-card"
                 >
+                  <div
+                    className="absolute left-0 right-0 top-0 z-10 h-1.5"
+                    style={{ backgroundColor: getSeverityColor(incident.severity) }}
+                  />
                   {incident.imageUrl ? (
                     <ImageWithFallback
                       src={incident.imageUrl}
@@ -188,17 +166,39 @@ export function HomePage() {
                   ) : null}
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,24,44,0.10)_0%,rgba(10,24,44,0.3)_40%,rgba(10,24,44,0.82)_100%)]" />
                   <div className="relative flex h-full flex-col justify-between p-3 text-white">
-                    <div className="flex items-start justify-between gap-2">
-                      <InfoBadge icon="route" label={incident.distance} />
-                      <InfoBadge icon="schedule" label={incident.timestamp} />
-                    </div>
                     <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CategoryPill
+                          label={incident.category}
+                          tone={incident.categoryColor}
+                        />
+                        <SeverityPill
+                          label={incident.severity}
+                          tone={getSeverityColor(incident.severity)}
+                        />
+                      </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <InfoBadge icon="route" label={incident.distance} />
+                        <InfoBadge icon="schedule" label={incident.timestamp} />
+                      </div>
+                    </div>
+                    <div className="mt-auto flex flex-1 flex-col justify-end">
                       <h3 className="line-clamp-3 text-[16px] font-bold leading-tight">
                         {incident.title}
                       </h3>
-                      <div className="space-y-2">
+                      <div className="mt-2 space-y-2">
                         <InfoBadge icon="location_on" label={incident.location} />
-                        <InfoBadge icon="groups" label={`${incident.responders} responding`} />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-4 pt-1">
+                        <span className="pr-2 text-[11px] font-medium text-white/88">
+                          {incident.responders} responding
+                        </span>
+                        <Link
+                          to={`/incidents/${incident.id}`}
+                          className="inline-flex min-w-[68px] items-center justify-center rounded-full bg-accent-primary px-3 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
+                        >
+                          Details
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -239,4 +239,36 @@ function InfoBadgeLight({ icon, label }: { icon: string; label: string }) {
       <span className="truncate">{label}</span>
     </div>
   );
+}
+
+function CategoryPill({ label, tone }: { label: string; tone: string }) {
+  return (
+    <span
+      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+      style={{
+        backgroundColor: tone,
+      }}
+    >
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
+function SeverityPill({ label, tone }: { label: string; tone: string }) {
+  return (
+    <span
+      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-white"
+      style={{
+        backgroundColor: tone,
+      }}
+    >
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
+function getSeverityColor(severity: Incident["severity"]) {
+  if (severity === "High") return "var(--cat-fight)";
+  if (severity === "Medium") return "var(--cat-transport)";
+  return "var(--success)";
 }

@@ -1,4 +1,5 @@
 import { TopBar } from "../components/layout/TopBar";
+import { Link } from "react-router";
 
 const notifications = [
   {
@@ -77,6 +78,14 @@ export function NotificationsPage() {
                 </p>
                 <div className="mt-3 inline-flex rounded-full bg-accent-subtle px-2.5 py-1 text-[11px] font-bold text-accent-primary">
                   {notification.distance}
+                </div>
+                <div className="mt-3">
+                  <Link
+                    to={`/incidents/${notification.id}`}
+                    className="inline-flex items-center justify-center rounded-full bg-accent-primary px-2.5 py-1 text-[10px] font-bold text-white transition-colors hover:bg-accent-hover"
+                  >
+                    Details
+                  </Link>
                 </div>
               </div>
             </div>

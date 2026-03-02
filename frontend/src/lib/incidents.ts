@@ -40,6 +40,9 @@ export const incidents: IncidentWithMeta[] = [
     responders: 4,
     imageUrl:
       "https://images.unsplash.com/photo-1563266914-94073574828f?q=80&w=200&auto=format&fit=crop",
+    // approximate coordinates for latitude/longitude
+    lat: 1.3691,
+    lng: 103.8351,
     timeGroup: "HAPPENING NOW",
   },
   {
@@ -57,6 +60,8 @@ export const incidents: IncidentWithMeta[] = [
     responders: 2,
     imageUrl:
       "https://images.unsplash.com/photo-1471623320832-752e8bbf8413?q=80&w=200&auto=format&fit=crop",
+    lat: 1.3035,
+    lng: 103.8328,
     timeGroup: "HAPPENING NOW",
   },
   {
@@ -71,6 +76,10 @@ export const incidents: IncidentWithMeta[] = [
     summary: "Multi-vehicle collision at junction. Ambulance en route.",
     timestamp: "45 min ago",
     responders: 6,
+    imageUrl:
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=200&auto=format&fit=crop",
+    lat: 1.3008,
+    lng: 103.8570,
     timeGroup: "LAST HOUR",
   },
   {
@@ -85,8 +94,12 @@ export const incidents: IncidentWithMeta[] = [
     summary: "Smoke detected from rubbish chute. SCDF notified.",
     timestamp: "3 hours ago",
     responders: 3,
+    imageUrl:
+      "https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=200&auto=format&fit=crop",
+    lat: 1.3541,
+    lng: 103.9450,
     timeGroup: "EARLIER TODAY",
-  },
+  }
 ];
 
 export const incidentGroups: IncidentTimeGroup[] = [
@@ -161,4 +174,8 @@ export function filterIncidents(
       matchesProximity(item.distance, filters.proximity)
     );
   });
+}
+
+export function getIncidentById(id: string): IncidentWithMeta | undefined {
+  return incidents.find((incident) => incident.id === id);
 }

@@ -5,6 +5,7 @@ import { FeedPage } from "./pages/Feed";
 import { MapPage } from "./pages/MapPage";
 import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
+import { IncidentDetailsPage } from "./pages/IncidentDetails";
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
       { index: true, Component: HomePage },
       { path: "feed", Component: FeedPage },
       { path: "map", Component: MapPage },
+      { path: "incidents/:incidentId", Component: IncidentDetailsPage },
       { path: "notifications", Component: NotificationsPage },
       { path: "profile", Component: ProfilePage },
       { path: "*", Component: () => <div>Not Found</div> },

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import List, Optional
 
 
 class IncidentRequest(BaseModel):
@@ -49,3 +49,15 @@ class IncidentResponse(BaseModel):
             }
         }
     )
+
+class NearbyIncidentItem(BaseModel):
+    incident_id: str
+    location: Optional[str] = None
+    description: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    distance_m: float
+
+
+class NearbyIncidentsResponse(BaseModel):
+    nearby_incidents: List[NearbyIncidentItem]

@@ -1,6 +1,6 @@
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException
-from app.schemas.incidents import IncidentRequest, IncidentResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from app.schemas.incidents import IncidentRequest, IncidentResponse, NearbyIncidentsResponse
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 from app.models.triage import IncidentReport, FinalTriage
@@ -9,8 +9,10 @@ from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.utills.media import save_base64_image
 from pathlib import Path as FilePath
+from sqlalchemy import func
 
-
+from app.services.incidents import fetch_nearby_incidents
+from geoalchemy2 import Geography
 incidents_router = APIRouter(prefix="/incidents")
 
 
@@ -50,6 +52,7 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         description=req.description,
         latitude=req.lat,
         longitude=req.lng,
+         location=func.ST_SetSRID(func.ST_MakePoint(req.lng, req.lat), 4326).cast(Geography(geometry_type="POINT", srid=4326))
     )
     db.add(incident)
     db.commit()
@@ -106,3 +109,16 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         final=final.model_dump(),
         metadata=metadata.model_dump() if metadata else None
     )
+
+
+
+@incidents_router.get("/nearby", response_model=NearbyIncidentsResponse)
+def get_nearby_incidents(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    radius_m: int = Query(1000, ge=50, le=50000),
+    limit: int = Query(30, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    nearby = fetch_nearby_incidents(db, lat, lng, radius_m, limit)
+    return {"nearby_incidents": nearby}

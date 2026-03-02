@@ -1,6 +1,6 @@
 from uuid import uuid4
-from fastapi import APIRouter, Depends, Path
-from app.schemas.incident_schemas import IncidentRequest, IncidentResponse
+from fastapi import APIRouter, Depends, HTTPException
+from backend.app.schemas.incidents import IncidentRequest, IncidentResponse
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 from app.models.triage import IncidentReport
@@ -9,9 +9,14 @@ from app.core.database import get_db
 from sqlalchemy.orm import Session
 from app.utills.media import save_base64_image
 from pathlib import Path as FilePath
+
+
 incidents_router = APIRouter(prefix="/incidents")
 
+
 UPLOAD_DIR = FilePath("uploads")
+
+
 def severity_radius(sev):
     return {
         "CRITICAL": 800,
@@ -26,7 +31,6 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
 
     incident_id = str(uuid4())
     saved_path = None
-    
 
     if req.image_url:
         try:
@@ -53,17 +57,16 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
     if saved_path:
 
         media = MediaAsset(
-        id=str(uuid4()),
-        report_id=incident.id,
-        media_type="IMAGE",
-        url=saved_path,
-        created_at=incident.created_at
+            id=str(uuid4()),
+            report_id=incident.id,
+            media_type="IMAGE",
+            url=saved_path,
+            created_at=incident.created_at
         )
         db.add(media)
         db.commit()
-        db.refresh(media) 
+        db.refresh(media)
 
-    
     if radius > 0:
         payload = {
             "type": "ALERT",
@@ -84,7 +87,6 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
             radius,
             payload
         )
-      
 
     return IncidentResponse(
         incident_id=incident_id,

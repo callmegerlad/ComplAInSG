@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
+
 class IncidentRequest(BaseModel):
     location: str
     description: str
@@ -24,11 +25,12 @@ class IncidentRequest(BaseModel):
         }
     )
 
+
 class IncidentResponse(BaseModel):
     incident_id: str
     final: dict
     metadata: Optional[dict] = None
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {

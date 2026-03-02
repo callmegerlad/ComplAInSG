@@ -1,10 +1,11 @@
 from uuid import uuid4
 from fastapi import APIRouter
-from backend.app.schemas.api_schemas import IncidentRequest
+from app.schemas.api_schemas import IncidentRequest
 from app.agents.pipeline import run_triage_pipeline
 from app.services.realtime import router
 
 incidents_router = APIRouter(prefix="/incidents")
+
 
 def severity_radius(sev):
     return {
@@ -13,6 +14,7 @@ def severity_radius(sev):
         "MEDIUM": 150,
         "LOW": 0
     }.get(sev, 0)
+
 
 @incidents_router.post("/triage")
 async def triage(req: IncidentRequest):

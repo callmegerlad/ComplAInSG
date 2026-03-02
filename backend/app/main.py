@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.settings import settings
 from app.routes.incidents import incidents_router
 from app.routes.ws_alerts import ws_router
+from app.routes.users import users_router
 
 if settings.OPENAI_API_KEY:
     os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
@@ -27,3 +28,4 @@ def health():
 
 app.include_router(incidents_router)
 app.include_router(ws_router)
+app.include_router(users_router)

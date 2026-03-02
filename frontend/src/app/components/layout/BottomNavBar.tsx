@@ -23,7 +23,7 @@ export function BottomNavBar() {
           active ? "text-accent-primary" : "text-text-disabled"
         )}
       >
-        <div className="flex h-8 items-center justify-center">
+        <div className="flex h-6 items-center justify-center">
           <span className={cn("material-symbols-outlined", active && "fill-1")}>
             {icon}
           </span>

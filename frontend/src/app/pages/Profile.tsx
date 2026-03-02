@@ -3,8 +3,13 @@ import { useNavigate } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { applyTheme, getPreferredTheme } from "@/lib/theme";
 
+const CONTINUOUS_VIEW_KEY = "complainsg-continuous-view";
+
 export function ProfilePage() {
   const [isDarkMode, setIsDarkMode] = useState(() => getPreferredTheme() === "dark");
+  const [continuousView, setContinuousView] = useState(
+    () => localStorage.getItem(CONTINUOUS_VIEW_KEY) !== "false",
+  );
   const navigate = useNavigate();
 
   return (
@@ -124,6 +129,39 @@ export function ProfilePage() {
           <div
             className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
               isDarkMode ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
+        </div>
+      </button>
+
+      {/* Continuous Incidents View toggle */}
+      <button
+        type="button"
+        onClick={() => {
+          const next = !continuousView;
+          setContinuousView(next);
+          localStorage.setItem(CONTINUOUS_VIEW_KEY, String(next));
+        }}
+        className="mx-4 mt-3 flex items-center justify-between p-4 rounded-xl bg-surface-1 border border-border-subtle transition-colors hover:bg-surface-2"
+        aria-pressed={continuousView}
+      >
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-[20px] text-text-secondary">
+            view_stream
+          </span>
+          <div className="flex flex-col items-start">
+            <span className="text-[14px] text-text-primary">Continuous Incidents View</span>
+            <span className="text-[11px] text-text-secondary">Auto-scrolling ticker on Home</span>
+          </div>
+        </div>
+        <div
+          className={`relative h-6 w-12 shrink-0 rounded-full transition-colors ${
+            continuousView ? "bg-accent-primary" : "bg-border-subtle"
+          }`}
+        >
+          <div
+            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+              continuousView ? "translate-x-7" : "translate-x-1"
             }`}
           />
         </div>

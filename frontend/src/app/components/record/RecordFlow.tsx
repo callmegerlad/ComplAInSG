@@ -18,21 +18,59 @@ const categories: { label: CategoryType; icon: string; colorVar: string }[] = [
 type RecordFlowProps = {
   initialCategory?: CategoryType | null;
   startAtCamera?: boolean;
+  incidentContext?: string;
+  submitLabel?: string;
 };
 
-export function RecordFlow({ initialCategory = null, startAtCamera = false }: RecordFlowProps) {
+function getSupportedMimeType(): string {
+  if (typeof MediaRecorder === "undefined") {
+    return "";
+  }
+
+  const mimeTypes = [
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm;codecs=h264,opus",
+    "video/webm",
+  ];
+
+  return mimeTypes.find((mimeType) => MediaRecorder.isTypeSupported(mimeType)) ?? "";
+}
+
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+}
+
+export function RecordFlow({
+  initialCategory = null,
+  startAtCamera = false,
+  incidentContext,
+  submitLabel = "Submit Report",
+}: RecordFlowProps) {
   const [step, setStep] = useState<1 | 2 | 3>(initialCategory || startAtCamera ? 2 : 1);
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(initialCategory);
-  const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isPreparingCamera, setIsPreparingCamera] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [capturedPhotoUrl, setCapturedPhotoUrl] = useState<string | null>(null);
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(true);
+  const [recordingDurationSeconds, setRecordingDurationSeconds] = useState(0);
 
   const liveVideoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<number | null>(null);
+
+  function stopDurationTimer() {
+    if (recordingIntervalRef.current !== null) {
+      window.clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = null;
+    }
+  }
 
   function stopStream() {
     mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -43,12 +81,14 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
     }
   }
 
-  function resetPhotoState() {
-    setIsTakingPhoto(false);
+  function resetRecordingState() {
+    setIsRecording(false);
+    setRecordingDurationSeconds(0);
+    stopDurationTimer();
 
-    if (capturedPhotoUrl) {
-      URL.revokeObjectURL(capturedPhotoUrl);
-      setCapturedPhotoUrl(null);
+    if (recordedVideoUrl) {
+      URL.revokeObjectURL(recordedVideoUrl);
+      setRecordedVideoUrl(null);
     }
   }
 
@@ -86,52 +126,84 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
     }
   }
 
-  function capturePhoto() {
-    const video = liveVideoRef.current;
-    const canvas = canvasRef.current;
+  function stopRecording() {
+    const recorder = mediaRecorderRef.current;
 
-    if (!video || !canvas) {
-      setCameraError("Camera is not ready. Please wait.");
+    if (!recorder || recorder.state === "inactive") {
       return;
     }
 
+    recorder.stop();
+    setIsRecording(false);
+    stopDurationTimer();
+  }
+
+  function startRecording() {
+    const stream = mediaStreamRef.current;
+
+    if (!stream) {
+      setCameraError("Camera is not ready yet. Please wait or retry.");
+      return;
+    }
+
+    if (typeof MediaRecorder === "undefined") {
+      setCameraError("Video recording is not supported in this browser.");
+      return;
+    }
+
+    const mimeType = getSupportedMimeType();
+
     try {
-      setIsTakingPhoto(true);
-      const context = canvas.getContext("2d");
+      recordedChunksRef.current = [];
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
 
-      if (!context) {
-        setCameraError("Unable to capture photo. Please try again.");
-        return;
-      }
+      mediaRecorderRef.current = recorder;
 
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      recorder.ondataavailable = (event: BlobEvent) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
 
-      // Draw current frame from video
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      recorder.onstop = () => {
+        const blobType = mimeType || "video/webm";
+        const blob = new Blob(recordedChunksRef.current, { type: blobType });
 
-      // Convert canvas to blob and create object URL
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          setCameraError("Failed to process photo. Please try again.");
+        if (blob.size === 0) {
+          setCameraError("Recording failed. Please try again.");
           return;
         }
 
         const nextUrl = URL.createObjectURL(blob);
-        setCapturedPhotoUrl((currentUrl) => {
+        setRecordedVideoUrl((currentUrl) => {
           if (currentUrl) {
             URL.revokeObjectURL(currentUrl);
           }
+
           return nextUrl;
         });
-
         stopStream();
         setStep(3);
-      }, "image/jpeg", 0.95);
-    } catch (error) {
-      setCameraError("Failed to capture photo. Please try again.");
-      setIsTakingPhoto(false);
+      };
+
+      recorder.onerror = () => {
+        setCameraError("Recording failed unexpectedly. Please try again.");
+        setIsRecording(false);
+        stopDurationTimer();
+      };
+
+      recorder.start(250);
+      setCameraError(null);
+      setIsRecording(true);
+      setRecordingDurationSeconds(0);
+      stopDurationTimer();
+      recordingIntervalRef.current = window.setInterval(() => {
+        setRecordingDurationSeconds((current) => current + 1);
+      }, 1000);
+    } catch {
+      setCameraError("Unable to start recording on this device.");
     }
   }
 
@@ -141,7 +213,7 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
     setDescription("");
     setIsAnonymous(true);
     setCameraError(null);
-    resetPhotoState();
+    resetRecordingState();
     stopStream();
   }, [initialCategory, startAtCamera]);
 
@@ -151,18 +223,23 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
       return;
     }
 
-    stopStream();
+    if (isRecording) {
+      stopRecording();
+    } else {
+      stopStream();
+    }
   }, [step]);
 
   useEffect(() => {
     return () => {
+      stopDurationTimer();
       stopStream();
 
-      if (capturedPhotoUrl) {
-        URL.revokeObjectURL(capturedPhotoUrl);
+      if (recordedVideoUrl) {
+        URL.revokeObjectURL(recordedVideoUrl);
       }
     };
-  }, [capturedPhotoUrl]);
+  }, [recordedVideoUrl]);
 
   if (step === 1) {
     return (
@@ -207,16 +284,15 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
             muted
             playsInline
           />
-          <canvas ref={canvasRef} className="hidden" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/70" />
           {(isPreparingCamera || cameraError) && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/70 px-6 text-center">
               <div className="max-w-xs space-y-3">
                 <span className="material-symbols-outlined text-[56px] text-white/70">
-                  {cameraError ? "photo_camera_off" : "progress_activity"}
+                  {cameraError ? "videocam_off" : "progress_activity"}
                 </span>
                 <p className="text-[13px] text-white/85">
-                  {cameraError ?? "Requesting camera access..."}
+                  {cameraError ?? "Requesting camera and microphone access..."}
                 </p>
                 {cameraError && (
                   <button
@@ -232,20 +308,27 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
           )}
         </div>
 
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
-          <button
-            type="button"
-            onClick={() => {
-              setStep(1);
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between p-4">
+          <DrawerClose asChild={startAtCamera && !selectedCategory}>
+            <button
+              type="button"
+              onClick={() => {
+                stopRecording();
+                if (!startAtCamera || selectedCategory) {
+                  setStep(1);
+                }
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </DrawerClose>
           <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
-            {selectedCategory ?? "Report"}
+            {incidentContext ?? selectedCategory ?? "Report"}
           </div>
-          <div className="w-9" />
+          <div className="rounded-full bg-black/40 px-3 py-1 text-[12px] font-bold">
+            {isRecording ? formatDuration(recordingDurationSeconds) : "Ready"}
+          </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col gap-4 rounded-t-2xl bg-black/80 p-6 backdrop-blur-md">
@@ -253,13 +336,16 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
             <span className="material-symbols-outlined text-[16px] text-success">
               location_on
             </span>
-            <span className="text-[12px]">Near Marina Bay Sands</span>
+            <span className="text-[12px]">{incidentContext ?? "Near Marina Bay Sands"}</span>
           </div>
 
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => void startCamera()}
+              onClick={() => {
+                resetRecordingState();
+                void startCamera();
+              }}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10"
             >
               <span className="material-symbols-outlined">refresh</span>
@@ -267,13 +353,23 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
 
             <button
               type="button"
-              onClick={capturePhoto}
-              disabled={isPreparingCamera || !!cameraError || isTakingPhoto}
+              onClick={() => {
+                if (isRecording) {
+                  stopRecording();
+                } else {
+                  startRecording();
+                }
+              }}
+              disabled={isPreparingCamera || !!cameraError}
               className={`flex h-16 w-16 items-center justify-center rounded-full border-4 border-white transition-all ${
-                isTakingPhoto ? "scale-110 bg-danger" : "bg-danger"
+                isRecording ? "scale-110 bg-danger" : "bg-danger"
               }`}
             >
-              <span className="material-symbols-outlined text-white text-[28px]">photo_camera</span>
+              {isRecording ? (
+                <div className="h-6 w-6 rounded-sm bg-white" />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-white" />
+              )}
             </button>
 
             <button
@@ -290,7 +386,9 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
           </div>
 
           <p className="text-center text-[10px] text-white/60">
-            Tap to capture a photo of the incident
+            {isRecording
+              ? "Recording in progress. Tap again to stop."
+              : "Tap to start recording video evidence for this incident."}
           </p>
         </div>
       </div>
@@ -300,24 +398,27 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto bg-surface-1 p-4">
       <DrawerHeader className="p-0 pb-2">
-        <div className="mb-4 mx-auto h-1 w-12 rounded-full bg-border-subtle" />
-        <DrawerTitle>Review Report</DrawerTitle>
+        <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-border-subtle" />
+        <DrawerTitle>{incidentContext ? "Attach Video to Incident" : "Review Report"}</DrawerTitle>
         <DrawerDescription>
-          Check the photo and add supporting details before submission.
+          {incidentContext
+            ? "Check the recording and upload it to the existing incident thread."
+            : "Check the recording and add supporting details before submission."}
         </DrawerDescription>
       </DrawerHeader>
 
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-surface-2">
-        {capturedPhotoUrl ? (
-          <img
-            src={capturedPhotoUrl}
-            alt="Captured incident"
-            className="h-full w-full object-cover"
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-surface-2">
+        {recordedVideoUrl ? (
+          <video
+            src={recordedVideoUrl}
+            className="h-full w-full bg-black object-cover"
+            controls
+            playsInline
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
             <span className="material-symbols-outlined text-[48px] text-accent-primary">
-              image
+              play_circle
             </span>
           </div>
         )}
@@ -325,21 +426,27 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
 
       <div className="flex items-center gap-2 rounded-xl bg-success-subtle p-3 text-success">
         <span className="material-symbols-outlined text-[18px]">check_circle</span>
-        <span className="text-[13px] font-bold">Photo captured and ready for review</span>
+        <span className="text-[13px] font-bold">
+          {incidentContext ? "Video captured and ready to upload" : "Recording saved and ready for review"}
+        </span>
       </div>
 
       <div className="rounded-xl border border-border-subtle bg-surface-2 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[12px] font-bold text-text-primary">{selectedCategory}</p>
+            <p className="text-[12px] font-bold text-text-primary">
+              {incidentContext ?? selectedCategory ?? "Report"}
+            </p>
             <p className="mt-1 text-[12px] text-text-secondary">
-              Photo evidence attached
+              {recordingDurationSeconds > 0
+                ? `Recorded video length: ${formatDuration(recordingDurationSeconds)}`
+                : "Recorded evidence attached"}
             </p>
           </div>
           <button
             type="button"
             onClick={() => {
-              resetPhotoState();
+              resetRecordingState();
               setStep(2);
             }}
             className="rounded-full border border-border-subtle px-3 py-1.5 text-[12px] font-bold text-text-primary"
@@ -353,7 +460,11 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
         value={description}
         onChange={(event) => setDescription(event.target.value)}
         className="min-h-[100px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] placeholder:text-text-disabled focus:outline-accent-primary"
-        placeholder="Add context: what happened, exact location, direction of travel, and any urgent risks..."
+        placeholder={
+          incidentContext
+            ? "Add a note for responders about what this video shows..."
+            : "Add context: what happened, exact location, direction of travel, and any urgent risks..."
+        }
       />
 
       <button
@@ -378,11 +489,13 @@ export function RecordFlow({ initialCategory = null, startAtCamera = false }: Re
       <div className="mt-auto pt-4">
         <DrawerClose asChild>
           <button className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95">
-            Submit Report
+            {submitLabel}
           </button>
         </DrawerClose>
         <p className="mt-2 text-center text-[11px] text-text-secondary">
-          Will alert people within 250m and notify SPF
+          {incidentContext
+            ? "This video will be attached to the current incident thread."
+            : "Will alert people within 250m and notify SPF"}
         </p>
       </div>
     </div>

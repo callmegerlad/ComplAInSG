@@ -17,8 +17,9 @@ export function TopBar({ showSearch = true }: TopBarProps) {
           {/* Wordmark */}
           <div className="flex items-center gap-0">
              <span className="font-bold text-lg text-text-primary">Compl</span>
-             <span className="font-bold text-lg text-accent-primary">AI</span>
-             <span className="font-bold text-lg text-text-primary">nSG</span>
+             <span className="font-bold text-lg text-blue-500">AI</span>
+             <span className="font-bold text-lg text-text-primary">n</span>
+             <span className="inline-flex items-center justify-center w-7 h-7 border-2 border-red-500 rounded-full bg-red-500 font-bold text-text-primary">SG</span>
           </div>
         </div>
         

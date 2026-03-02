@@ -80,7 +80,7 @@ export function HomePage() {
                     <span className="material-symbols-outlined !text-[64px]">warning</span>
                     <span className="inline-flex items-center gap-2 text-[16px] font-semibold tracking-[0.18em]">
                       <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-white" />
-                      REPORT
+                      FAST REPORT
                     </span>
                   </button>
                 </div>

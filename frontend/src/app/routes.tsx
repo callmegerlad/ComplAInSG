@@ -7,23 +7,39 @@ import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
 import { IncidentDetailsPage } from "./pages/IncidentDetails";
 import { AuthPage } from "./pages/Auth";
+import { PublicOnlyAuthRoute, RequireAuth } from "./components/auth/AuthGuards";
+import { SingpassCallbackPage } from "./pages/SingpassCallback";
 
 export const router = createBrowserRouter([
   {
-    path: "/auth",
-    Component: AuthPage,
+    Component: PublicOnlyAuthRoute,
+    children: [
+      {
+        path: "/auth",
+        Component: AuthPage,
+      },
+      {
+        path: "/auth/singpass/callback",
+        Component: SingpassCallbackPage,
+      },
+    ],
   },
   {
-    path: "/",
-    Component: RootLayout,
+    Component: RequireAuth,
     children: [
-      { index: true, Component: HomePage },
-      { path: "feed", Component: FeedPage },
-      { path: "map", Component: MapPage },
-      { path: "incidents/:incidentId", Component: IncidentDetailsPage },
-      { path: "notifications", Component: NotificationsPage },
-      { path: "profile", Component: ProfilePage },
-      { path: "*", Component: () => <div>Not Found</div> },
+      {
+        path: "/",
+        Component: RootLayout,
+        children: [
+          { index: true, Component: HomePage },
+          { path: "feed", Component: FeedPage },
+          { path: "map", Component: MapPage },
+          { path: "incidents/:incidentId", Component: IncidentDetailsPage },
+          { path: "notifications", Component: NotificationsPage },
+          { path: "profile", Component: ProfilePage },
+          { path: "*", Component: () => <div>Not Found</div> },
+        ],
+      },
     ],
   },
 ]);

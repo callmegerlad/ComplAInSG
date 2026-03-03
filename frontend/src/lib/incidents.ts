@@ -1,6 +1,9 @@
 import type { Incident } from "@/app/components/home/IncidentCard";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+const MEDIA_BASE_URL = API_BASE_URL.endsWith("/api")
+  ? API_BASE_URL.slice(0, -4)
+  : API_BASE_URL;
 
 export type IncidentTimeGroup =
   | "HAPPENING NOW"
@@ -471,9 +474,17 @@ function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefin
     return undefined;
   }
 
-  const value = rawUrl.trim();
+  let value = rawUrl.trim();
   if (!value) {
     return undefined;
+  }
+
+  if (value.startsWith("(") && value.endsWith(")")) {
+    value = value.slice(1, -1);
+  }
+
+  if (value.includes(",")) {
+    value = value.split(",")[0].trim();
   }
 
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -481,10 +492,10 @@ function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefin
   }
 
   if (value.startsWith("/")) {
-    return `${API_BASE_URL}${value}`;
+    return `${MEDIA_BASE_URL}${value}`;
   }
 
-  return `${API_BASE_URL}/${value}`;
+  return `${MEDIA_BASE_URL}/${value}`;
 }
 
 function formatDistanceMeters(distanceMeters: number): string {

@@ -78,7 +78,7 @@ export function HomePage() {
         setIsRecordDrawerOpen(open);
       }}
     >
-      <div className="flex min-h-full flex-col bg-bg-primary">
+      <div className="flex min-h-full flex-col bg-bg-primary pb-12">
         <div className="sticky top-0 z-20">
           <TopBar showSearch={true} />
           <AlertBanner message="Fight reported" distance="80m away" />

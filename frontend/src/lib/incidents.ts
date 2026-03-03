@@ -192,7 +192,7 @@ type ApiNearbyIncidentsResponse = {
   nearby_incidents: ApiNearbyIncidentItem[];
 };
 
-export async function fetchIncidentList(params: { skip?: number; limit?: number } = {}) {
+export async function fetchIncidentList(params: { skip?: number; limit?: number; userLat?: number; userLng?: number } = {}) {
   const skip = params.skip ?? 0;
   const limit = params.limit ?? 30;
   const query = new URLSearchParams({
@@ -204,7 +204,9 @@ export async function fetchIncidentList(params: { skip?: number; limit?: number 
 
   return {
     total: data.total,
-    incidents: data.incidents.map((incident) => mapApiIncidentToIncident(incident)),
+    incidents: data.incidents.map((incident) =>
+      mapApiIncidentToIncident(incident, params.userLat, params.userLng),
+    ),
   };
 }
 
@@ -304,10 +306,20 @@ export function getIncidentById(id: string): IncidentWithMeta | undefined {
   return incidents.find((incident) => incident.id === id);
 }
 
-function mapApiIncidentToIncident(apiIncident: ApiIncidentDetail): IncidentWithMeta {
+function mapApiIncidentToIncident(
+  apiIncident: ApiIncidentDetail,
+  userLat?: number,
+  userLng?: number,
+): IncidentWithMeta {
   const incidentType = normalizeIncidentType(apiIncident.final_triage?.incident_type);
   const severity = normalizeSeverity(apiIncident.final_triage?.final_severity);
   const categoryMeta = getCategoryMeta(incidentType);
+
+  let distance = "N/A";
+  if (userLat !== undefined && userLng !== undefined && apiIncident.latitude && apiIncident.longitude) {
+    const distanceMeters = haversineDistance(userLat, userLng, apiIncident.latitude, apiIncident.longitude);
+    distance = formatDistanceMeters(distanceMeters);
+  }
 
   return {
     id: apiIncident.id,
@@ -316,7 +328,7 @@ function mapApiIncidentToIncident(apiIncident: ApiIncidentDetail): IncidentWithM
     categoryIcon: categoryMeta.icon,
     severity,
     location: apiIncident.location_text || "Unknown location",
-    distance: "N/A",
+    distance,
     title: `${incidentType} reported`,
     summary:
       apiIncident.final_triage?.responder_summary?.trim() ||
@@ -517,6 +529,19 @@ function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefin
   }
 
   return `${MEDIA_BASE_URL}/${value}`;
+}
+
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000; // Earth's radius in meters
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 function formatDistanceMeters(distanceMeters: number): string {

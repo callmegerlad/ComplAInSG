@@ -42,7 +42,6 @@ const PRIVACY_PREFS_KEY = "complainsg_privacy_prefs";
 
 interface PrivacyPrefs {
   anonymousReporting: boolean;
-  locationSharingEnabled: boolean;
   profileVisibleToPublic: boolean;
 }
 
@@ -53,7 +52,7 @@ function loadPrivacyPrefs(): PrivacyPrefs {
   } catch {
     // ignore
   }
-  return { anonymousReporting: false, locationSharingEnabled: true, profileVisibleToPublic: true };
+  return { anonymousReporting: false, profileVisibleToPublic: true };
 }
 
 function savePrivacyPrefs(prefs: PrivacyPrefs) {
@@ -86,15 +85,19 @@ function ToggleRow({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative shrink-0 h-6 w-12 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary ${
-          checked ? "bg-accent-primary" : "bg-border-subtle"
-        }`}
+        className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary rounded-full"
       >
-        <span
-          className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? "translate-x-7" : "translate-x-1"
+        <div
+          className={`relative h-6 w-12 rounded-full transition-colors ${
+            checked ? "bg-accent-primary" : "bg-border-subtle"
           }`}
-        />
+        >
+          <div
+            className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+              checked ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
+        </div>
       </button>
     </div>
   );
@@ -257,12 +260,6 @@ export function ProfilePage() {
               description='Submit reports with your name hidden. Reports will show "Anonymous" instead of your display name.'
               checked={privacyPrefs.anonymousReporting}
               onChange={(v) => updatePrivacyPref("anonymousReporting", v)}
-            />
-            <ToggleRow
-              label="Location Sharing"
-              description="Allow the app to use your GPS position to detect nearby incidents and send proximity alerts."
-              checked={privacyPrefs.locationSharingEnabled}
-              onChange={(v) => updatePrivacyPref("locationSharingEnabled", v)}
             />
             <ToggleRow
               label="Public Profile"

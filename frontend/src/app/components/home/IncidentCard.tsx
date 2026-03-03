@@ -26,7 +26,8 @@ export interface Incident {
   lng?: number;
 }
 
-export function IncidentCard({ incident }: { incident: Incident }) {
+export function IncidentCard({ incident, compact }: { incident: Incident; compact?: boolean }) {
+  compact = compact ?? false;
   return (
     <div className="relative flex overflow-hidden rounded-xl border border-border-subtle bg-surface-1 shadow-card">
       <div
@@ -101,7 +102,7 @@ export function IncidentCard({ incident }: { incident: Incident }) {
                 </Link>
               </div>
             </div>
-            <IncidentCredibility incidentId={incident.id} className="mt-2" />
+            <IncidentCredibility incidentId={incident.id} compact={compact} className="mt-2" />
           </div>
         </div>
       </div>

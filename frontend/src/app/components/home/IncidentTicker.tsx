@@ -173,7 +173,7 @@ function TickerCard({ incident }: { incident: Incident }) {
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
         >
-          <IncidentCredibility incidentId={incident.id} className="mt-1.5" />
+          <IncidentCredibility incidentId={incident.id} compact={true} className="mt-1.5" />
         </div>
       </div>
     </div>

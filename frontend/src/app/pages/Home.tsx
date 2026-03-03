@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import { TopBar } from "../components/layout/TopBar";
 import { AlertBanner } from "../components/home/AlertBanner";
-import type { Incident } from "../components/home/IncidentCard";
+import { IncidentCard, type Incident } from "../components/home/IncidentCard";
 import { IncidentTicker } from "../components/home/IncidentTicker";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { Drawer, DrawerContent } from "../components/ui/drawer";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 import { fetchNearbyIncidents } from "@/lib/incidents";
 import { useCurrentLocation } from "@/lib/location";
 
@@ -155,51 +152,9 @@ export function HomePage() {
             </div>
 
             {recommendedIncident ? (
-              <Link
-                to={`/incidents/${recommendedIncident.id}`}
-                className="mt-3 block overflow-hidden rounded-[24px] bg-surface-2 shadow-card"
-              >
-                <article>
-                  <div
-                    className="h-1.5 w-full"
-                    style={{ backgroundColor: getSeverityColor(recommendedIncident.severity) }}
-                  />
-                  <div className="flex min-h-[132px]">
-                    <div className="relative w-[42%] shrink-0">
-                      {recommendedIncident.imageUrl ? (
-                        <ImageWithFallback
-                          src={recommendedIncident.imageUrl}
-                          alt={recommendedIncident.title}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="flex flex-1 flex-col justify-between p-4">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <CategoryPill label={recommendedIncident.category} tone={recommendedIncident.categoryColor} />
-                          <SeverityPill
-                            label={recommendedIncident.severity}
-                            tone={getSeverityColor(recommendedIncident.severity)}
-                          />
-                        </div>
-                        <h3 className="mt-1 text-[18px] font-bold leading-tight text-text-primary">
-                          {recommendedIncident.location}
-                        </h3>
-                        <p className="mt-2 text-[13px] leading-5 text-text-secondary">
-                          {recommendedIncident.title}
-                        </p>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <InfoBadgeLight icon="route" label={recommendedIncident.distance} />
-                        <InfoBadgeLight icon="schedule" label={recommendedIncident.timestamp} />
-                        <InfoBadgeLight icon="groups" label={`${recommendedIncident.responders} responding`} />
-                      </div>
-                      <IncidentCredibility incidentId={recommendedIncident.id} className="mt-3" />
-                    </div>
-                  </div>
-                </article>
-              </Link>
+              <div className="mt-3">
+                <IncidentCard incident={recommendedIncident} compact={false} />
+              </div>
             ) : (
               <div className="mt-3 rounded-xl bg-surface-2 px-4 py-6 text-sm text-text-secondary">
                 No nearby incidents at your current location.
@@ -246,43 +201,6 @@ export function HomePage() {
       `}</style>
     </Drawer>
   );
-}
-
-function InfoBadgeLight({ icon, label }: { icon: string; label: string }) {
-  return (
-    <div className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-full bg-accent-subtle px-2.5 py-1.5 text-[11px] font-medium text-text-primary">
-      <span className="material-symbols-outlined !text-[14px] text-accent-primary">{icon}</span>
-      <span className="truncate">{label}</span>
-    </div>
-  );
-}
-
-function CategoryPill({ label, tone }: { label: string; tone: string }) {
-  return (
-    <span
-      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
-      style={{ backgroundColor: tone }}
-    >
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function SeverityPill({ label, tone }: { label: string; tone: string }) {
-  return (
-    <span
-      className="inline-flex w-fit max-w-full items-center rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-white"
-      style={{ backgroundColor: tone }}
-    >
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function getSeverityColor(severity: Incident["severity"]) {
-  if (severity === "High") return "var(--cat-fight)";
-  if (severity === "Medium") return "var(--cat-transport)";
-  return "var(--success)";
 }
 
 function getSeverityPriority(severity: Incident["severity"]) {

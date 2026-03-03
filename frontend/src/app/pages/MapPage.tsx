@@ -235,7 +235,7 @@ export function MapPage() {
               }}
               data-incident-id={incident.id}
             >
-              <IncidentCard incident={incident} />
+              <IncidentCard incident={incident} compact={true} />
             </div>
           ))}
           {filteredIncidents.length === 0 && (

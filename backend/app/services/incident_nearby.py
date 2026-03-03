@@ -24,6 +24,7 @@ def fetch_nearby_incidents(
             ir.created_at,
             ft.incident_type,
             ft.final_severity,
+            ft.routing_target,
             ft.responder_summary,
             (
               SELECT ma.url
@@ -48,6 +49,7 @@ def fetch_nearby_incidents(
             created_at,
             incident_type,
             final_severity,
+            routing_target,
             responder_summary,
             image_url,
             (6371000 * 2 * asin(sqrt(
@@ -82,6 +84,7 @@ def fetch_nearby_incidents(
             "created_at": r["created_at"],
             "incident_type": r["incident_type"],
             "final_severity": r["final_severity"],
+            "routing_target": r["routing_target"],
             "responder_summary": r["responder_summary"],
             "image_url": r["image_url"],
             "distance_m": float(r["distance_m"]),

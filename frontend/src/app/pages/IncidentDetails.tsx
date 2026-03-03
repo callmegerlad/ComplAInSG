@@ -6,6 +6,8 @@ import { Drawer, DrawerContent } from "../components/ui/drawer";
 import { RecordFlow } from "../components/record/RecordFlow";
 import { IncidentCredibility } from "../components/incidents/IncidentCredibility";
 import { fetchIncidentById, type IncidentWithMeta } from "@/lib/incidents";
+import { useAuth } from "../providers/AuthProvider";
+import { logAlertEvent } from "@/lib/alerts";
 
 interface NewReportState {
   isNewReport?: boolean;
@@ -56,6 +58,7 @@ export function IncidentDetailsPage() {
   const routerState = routerLocation.state as NewReportState | null;
   const isNewReport = routerState?.isNewReport === true;
   const triageData = routerState?.triageData;
+  const { accessToken } = useAuth();
 
   const [apiIncident, setApiIncident] = useState<IncidentWithMeta | null>(null);
   const [isLoadingIncident, setIsLoadingIncident] = useState(Boolean(incidentId));
@@ -98,6 +101,22 @@ export function IncidentDetailsPage() {
       cancelled = true;
     };
   }, [incidentId]);
+
+  useEffect(() => {
+    if (!incidentId || !accessToken) {
+      return;
+    }
+
+    void logAlertEvent(
+      {
+        incident_id: incidentId,
+        event_type: "view_incident",
+      },
+      accessToken,
+    ).catch(() => {
+      // Non-blocking analytics event.
+    });
+  }, [incidentId, accessToken]);
 
   // Build a synthetic incident for freshly submitted AI-triage reports
   const syntheticIncident: IncidentWithMeta | undefined =
@@ -278,7 +297,24 @@ export function IncidentDetailsPage() {
             <div className="grid gap-3">
               <button
                 type="button"
-                onClick={() => setIsOnMyWay((current) => !current)}
+                onClick={() => {
+                  const nextIsOnMyWay = !isOnMyWay;
+                  setIsOnMyWay(nextIsOnMyWay);
+
+                  if (!nextIsOnMyWay || !accessToken) {
+                    return;
+                  }
+
+                  void logAlertEvent(
+                    {
+                      incident_id: incident.id,
+                      event_type: "responding",
+                    },
+                    accessToken,
+                  ).catch(() => {
+                    // Non-blocking analytics event: keep user action successful even if tracking fails.
+                  });
+                }}
                 className={`flex w-full items-center justify-between rounded-2xl px-5 py-4 text-left font-bold text-white shadow-lg transition-colors ${
                   isOnMyWay ? "bg-accent-primary shadow-primary-btn" : "bg-success shadow-success/20"
                 }`}

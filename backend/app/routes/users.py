@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,7 +9,8 @@ from app.dependencies import (
     get_current_user,
 )
 from app.models.users import User, UserRole
-from app.models.triage import IncidentReport
+from app.models.triage import IncidentReport, FinalTriage
+from app.models.alert_events import UserAlertEvent, AlertEventType
 from app.schemas.users import (
     AuthResponse,
     UserCreateRequest,
@@ -26,6 +28,32 @@ from app.utils import (
 
 
 users_router = APIRouter(prefix="/users", tags=["users"])
+
+
+def compute_trust_score(report_count: int, high_or_critical_count: int) -> int:
+    """
+    Lightweight trust score for profile display.
+    - Base: 50
+    - +2 per report (up to +30)
+    - +4 per high/critical triaged report (up to +20)
+    """
+    score = 50 + min(report_count * 2, 30) + min(high_or_critical_count * 4, 20)
+    return max(0, min(100, score))
+
+
+def compute_badges(report_count: int, high_or_critical_count: int, trust_score: int) -> list[str]:
+    badges: list[str] = []
+
+    if report_count >= 1:
+        badges.append("first_report")
+    if report_count >= 5:
+        badges.append("consistent_reporter")
+    if trust_score >= 70:
+        badges.append("trusted")
+    if trust_score >= 85 and high_or_critical_count >= 3:
+        badges.append("guardian")
+
+    return badges
 
 
 @users_router.post(
@@ -115,9 +143,39 @@ def get_current_user_info(current_user: User = Depends(get_current_user), db: Se
     report_count = db.query(func.count(IncidentReport.id)).filter(
         IncidentReport.reporter_id == current_user.id
     ).scalar() or 0
+    high_or_critical_count = (
+        db.query(func.count(FinalTriage.id))
+        .join(IncidentReport, FinalTriage.report_id == IncidentReport.id)
+        .filter(
+            IncidentReport.reporter_id == current_user.id,
+            FinalTriage.final_severity.in_(["HIGH", "CRITICAL"]),
+        )
+        .scalar()
+        or 0
+    )
+    try:
+        alert_response_count = (
+            db.query(func.count(UserAlertEvent.id))
+            .filter(
+                UserAlertEvent.user_id == current_user.id,
+                UserAlertEvent.event_type == AlertEventType.RESPONDING,
+            )
+            .scalar()
+            or 0
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        alert_response_count = 0
 
     user_data = UserResponse.model_validate(current_user)
     user_data.report_count = report_count
+    user_data.alert_response_count = alert_response_count
+    user_data.trust_score = compute_trust_score(report_count, high_or_critical_count)
+    user_data.badges = compute_badges(
+        report_count=report_count,
+        high_or_critical_count=high_or_critical_count,
+        trust_score=user_data.trust_score,
+    )
     return user_data
 
 

@@ -11,6 +11,7 @@ from app.models.triage import (
     FinalTriage,
 )
 from app.models.media import MediaAsset
+from app.models.alert_events import UserAlertEvent, AlertEventType
 
 __all__ = [
     "User",
@@ -24,4 +25,6 @@ __all__ = [
     "TextTriage",
     "FinalTriage",
     "MediaAsset",
+    "UserAlertEvent",
+    "AlertEventType",
 ]

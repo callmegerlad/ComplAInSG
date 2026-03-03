@@ -8,6 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { fetchAlertsFeed, logAlertEvent, type AlertFeedItem } from "@/lib/alerts";
 
 type AlertSeverity = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | string;
 
@@ -21,6 +23,7 @@ export interface RealtimeAlert {
   incident_type: string;
   severity: AlertSeverity;
   routing: string;
+  distance_m?: number;
   receivedAt: string;
   read: boolean;
 }
@@ -80,6 +83,7 @@ function persistAlerts(alerts: RealtimeAlert[]) {
 }
 
 export function AlertsProvider({ children }: { children: ReactNode }) {
+  const { accessToken } = useAuth();
   const [alerts, setAlerts] = useState<RealtimeAlert[]>(() => loadStoredAlerts());
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("idle");
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>("unknown");
@@ -89,15 +93,53 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
   const locationWatchRef = useRef<number | null>(null);
   const latestLocationRef = useRef<LocationSnapshot | null>(null);
   const manualCloseRef = useRef(false);
+  const feedLoadedRef = useRef(false);
 
   useEffect(() => {
     persistAlerts(alerts);
   }, [alerts]);
 
+  const mergeFeedAlerts = useCallback((items: AlertFeedItem[]) => {
+    setAlerts((current) => {
+      const byIncidentId = new Map(current.map((alert) => [alert.incident_id, alert] as const));
+
+      for (const item of items) {
+        const existing = byIncidentId.get(item.incident_id);
+        const nextAlert: RealtimeAlert = {
+          type: "ALERT",
+          incident_id: item.incident_id,
+          location: item.location || "Unknown location",
+          incident_lat: existing?.incident_lat ?? 0,
+          incident_lng: existing?.incident_lng ?? 0,
+          radius_m: Number(item.distance_m || 0),
+          incident_type: item.incident_type || "Incident alert",
+          severity: item.severity || "LOW",
+          routing: item.routing || "",
+          distance_m: Number(item.distance_m || 0),
+          receivedAt: item.created_at || existing?.receivedAt || new Date().toISOString(),
+          read: item.read || existing?.read || false,
+        };
+        byIncidentId.set(item.incident_id, nextAlert);
+      }
+
+      return Array.from(byIncidentId.values()).sort(
+        (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime(),
+      );
+    });
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
+
+    if (!accessToken) {
+      setConnectionStatus("idle");
+      return;
+    }
+
+    manualCloseRef.current = false;
+    feedLoadedRef.current = false;
 
     if (!("geolocation" in navigator)) {
       setPermissionStatus("unsupported");
@@ -162,12 +204,25 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
               incident_type: payload.incident_type ?? "Incident alert",
               severity: payload.severity ?? "LOW",
               routing: payload.routing ?? "",
+              distance_m: undefined,
               receivedAt: new Date().toISOString(),
               read: false,
             };
 
             return [nextAlert, ...current].slice(0, MAX_STORED_ALERTS);
           });
+
+          if (accessToken) {
+            void logAlertEvent(
+              {
+                incident_id: incidentId,
+                event_type: "received",
+              },
+              accessToken,
+            ).catch(() => {
+              // Realtime UX should not be blocked by analytics/logging failures.
+            });
+          }
         } catch {
           setError("Received an invalid realtime alert payload.");
         }
@@ -205,6 +260,28 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
         latestLocationRef.current = nextLocation;
         setPermissionStatus("granted");
         sendLocation(nextLocation);
+
+        if (!accessToken || feedLoadedRef.current) {
+          return;
+        }
+
+        feedLoadedRef.current = true;
+        void fetchAlertsFeed(
+          {
+            lat: nextLocation.lat,
+            lng: nextLocation.lng,
+            radius_m: 5000,
+            limit: 30,
+          },
+          accessToken,
+        )
+          .then((items) => {
+            mergeFeedAlerts(items);
+          })
+          .catch(() => {
+            setError("Unable to load alerts feed from backend.");
+            feedLoadedRef.current = false;
+          });
       },
       (positionError) => {
         if (positionError.code === positionError.PERMISSION_DENIED) {
@@ -237,23 +314,32 @@ export function AlertsProvider({ children }: { children: ReactNode }) {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, []);
+  }, [accessToken, mergeFeedAlerts]);
 
   const markAllAsRead = useCallback(() => {
-    setAlerts((current) => {
-      let hasUnread = false;
-      const nextAlerts = current.map((alert) => {
-        if (alert.read) {
-          return alert;
-        }
+    const unreadIds = alerts.filter((alert) => !alert.read).map((alert) => alert.incident_id);
+    if (unreadIds.length === 0) {
+      return;
+    }
 
-        hasUnread = true;
-        return { ...alert, read: true };
-      });
+    setAlerts((current) => current.map((alert) => (alert.read ? alert : { ...alert, read: true })));
 
-      return hasUnread ? nextAlerts : current;
-    });
-  }, []);
+    if (!accessToken || unreadIds.length === 0) {
+      return;
+    }
+
+    void Promise.allSettled(
+      unreadIds.map((incidentId) =>
+        logAlertEvent(
+          {
+            incident_id: incidentId,
+            event_type: "open",
+          },
+          accessToken,
+        ),
+      ),
+    );
+  }, [accessToken, alerts]);
 
   const value = useMemo<AlertsContextValue>(
     () => ({

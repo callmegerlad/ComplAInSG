@@ -65,6 +65,9 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     report_count: int = 0
+    alert_response_count: int = 0
+    trust_score: int = 50
+    badges: list[str] = []
 
 
 class AuthResponse(BaseModel):

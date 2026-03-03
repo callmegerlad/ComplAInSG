@@ -18,7 +18,7 @@ export function NotificationsPage() {
       <div className="border-b border-border-subtle bg-surface-1 px-4 py-4">
         <h1 className="text-[20px] font-bold text-text-primary">Notifications</h1>
         <p className="mt-1 text-[13px] text-text-secondary">
-          Alerts sent because you were close to a reported incident.
+          Alerts sent because incidents were reported near your current location.
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export function NotificationsPage() {
                     {getAlertMessage(alert)}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <InfoPill label={formatDistance(alert.radius_m)} />
+                    <InfoPill label={getProximityLabel(alert)} />
                     <InfoPill label={alert.severity} />
                     {alert.routing ? <InfoPill label={alert.routing} /> : null}
                   </div>
@@ -141,7 +141,7 @@ function getAlertTitle(alert: RealtimeAlert) {
 }
 
 function getAlertMessage(alert: RealtimeAlert) {
-  return `Backend alert for ${alert.location}. You were within ${formatDistance(alert.radius_m)} of this incident zone.`;
+  return `Backend alert for ${alert.location}. ${getProximityMessage(alert)}`;
 }
 
 function getAlertTone(alert: RealtimeAlert) {
@@ -177,10 +177,34 @@ function normalizeIncidentType(value: string) {
 
 function formatDistance(distanceMeters: number) {
   if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(1)}km radius`;
+    return `${(distanceMeters / 1000).toFixed(1)}km away`;
   }
 
-  return `${Math.round(distanceMeters)}m radius`;
+  return `${Math.round(distanceMeters)}m away`;
+}
+
+function formatRadius(radiusMeters: number) {
+  if (radiusMeters >= 1000) {
+    return `${(radiusMeters / 1000).toFixed(1)}km zone`;
+  }
+
+  return `${Math.round(radiusMeters)}m zone`;
+}
+
+function getProximityLabel(alert: RealtimeAlert) {
+  if (Number.isFinite(alert.distance_m ?? Number.NaN)) {
+    return formatDistance(alert.distance_m as number);
+  }
+
+  return formatRadius(alert.radius_m);
+}
+
+function getProximityMessage(alert: RealtimeAlert) {
+  if (Number.isFinite(alert.distance_m ?? Number.NaN)) {
+    return `Reported approximately ${formatDistance(alert.distance_m as number)} from you.`;
+  }
+
+  return `You were within the ${formatRadius(alert.radius_m)} alert boundary.`;
 }
 
 function formatRelativeTime(isoString: string) {

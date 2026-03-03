@@ -163,6 +163,7 @@ type ApiIncidentDetail = {
   updated_at: string;
   final_triage?: ApiFinalTriage | null;
   reporter_name?: string | null;
+  image_url?: string | null;
 };
 
 type ApiIncidentListResponse = {
@@ -176,6 +177,11 @@ type ApiNearbyIncidentItem = {
   description?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  created_at?: string | null;
+  incident_type?: string | null;
+  final_severity?: string | number | null;
+  responder_summary?: string | null;
+  image_url?: string | null;
   distance_m: number;
 };
 
@@ -204,6 +210,28 @@ export async function fetchIncidentById(incidentId: string) {
   return mapApiIncidentToIncident(data);
 }
 
+export async function searchIncidents(
+  searchQuery: string,
+  incidentType: string = "",
+  severity: string = "",
+  skip: number = 0,
+  limit: number = 20,
+) {
+  const query = new URLSearchParams({
+    query: searchQuery,
+    incident_type: incidentType,
+    severity,
+    skip: String(skip),
+    limit: String(limit),
+  });
+
+  const data = await request<ApiIncidentListResponse>(`/incidents/search?${query.toString()}`);
+
+  return {
+    total: data.total,
+    incidents: data.incidents.map((incident) => mapApiIncidentToIncident(incident)),
+  };
+}
 export async function fetchNearbyIncidents(
   lat: number,
   lng: number,
@@ -295,6 +323,7 @@ function mapApiIncidentToIncident(apiIncident: ApiIncidentDetail): IncidentWithM
     status: apiIncident.status,
     responders: 0,
     reporter: apiIncident.reporter_name?.trim() || "Anonymous",
+    imageUrl: toAbsoluteMediaUrl(apiIncident.image_url),
     credibilityUpvotes: 0,
     credibilityDownvotes: 0,
     lat: apiIncident.latitude ?? undefined,
@@ -304,24 +333,33 @@ function mapApiIncidentToIncident(apiIncident: ApiIncidentDetail): IncidentWithM
 }
 
 function mapNearbyIncidentToIncident(apiIncident: ApiNearbyIncidentItem): IncidentWithMeta {
+  const incidentType = normalizeIncidentType(apiIncident.incident_type);
+  const severity = normalizeSeverity(apiIncident.final_severity);
+  const categoryMeta = getCategoryMeta(incidentType);
+  const createdAt = apiIncident.created_at ?? "";
+
   return {
     id: apiIncident.incident_id,
-    category: "Nearby Incident",
-    categoryColor: "var(--cat-transport)",
-    categoryIcon: "report",
-    severity: "Medium",
+    category: categoryMeta.label,
+    categoryColor: categoryMeta.color,
+    categoryIcon: categoryMeta.icon,
+    severity,
     location: apiIncident.location || "Unknown location",
     distance: formatDistanceMeters(apiIncident.distance_m),
-    title: "Nearby incident reported",
-    summary: apiIncident.description || "Incident reported nearby.",
-    timestamp: "Recent",
+    title: `${incidentType} reported`,
+    summary:
+      apiIncident.responder_summary?.trim() ||
+      apiIncident.description ||
+      "Incident reported nearby.",
+    timestamp: createdAt ? formatRelativeTime(createdAt) : "Recent",
     responders: 0,
     reporter: "Anonymous",
+    imageUrl: toAbsoluteMediaUrl(apiIncident.image_url),
     credibilityUpvotes: 0,
     credibilityDownvotes: 0,
     lat: apiIncident.latitude ?? undefined,
     lng: apiIncident.longitude ?? undefined,
-    timeGroup: "HAPPENING NOW",
+    timeGroup: createdAt ? toTimeGroup(createdAt) : "HAPPENING NOW",
   };
 }
 
@@ -448,6 +486,28 @@ function formatRelativeTime(createdAtIso: string): string {
   return `${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
 }
 
+
+function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefined {
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  const value = rawUrl.trim();
+  if (!value) {
+    return undefined;
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `${API_BASE_URL}${value}`;
+  }
+
+  return `${API_BASE_URL}/${value}`;
+}
+
 function formatDistanceMeters(distanceMeters: number): string {
   if (!Number.isFinite(distanceMeters) || distanceMeters < 0) {
     return "N/A";
@@ -479,6 +539,9 @@ async function request<T>(path: string, init: RequestInit = {}) {
 
   return data as T;
 }
+
+
+
 
 
 

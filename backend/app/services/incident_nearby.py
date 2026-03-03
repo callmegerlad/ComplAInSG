@@ -16,15 +16,27 @@ def fetch_nearby_incidents(
     q = text("""
         WITH candidates AS (
           SELECT
-            id,
-            location_text,
-            description,
-            latitude,
-            longitude
-          FROM incident_reports
-          WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-            AND latitude BETWEEN :lat_min AND :lat_max
-            AND longitude BETWEEN :lng_min AND :lng_max
+            ir.id,
+            ir.location_text,
+            ir.description,
+            ir.latitude,
+            ir.longitude,
+            ir.created_at,
+            ft.incident_type,
+            ft.final_severity,
+            ft.responder_summary,
+            (
+              SELECT ma.url
+              FROM media_assets ma
+              WHERE ma.report_id = ir.id AND ma.media_type = 'IMAGE'
+              ORDER BY ma.created_at DESC
+              LIMIT 1
+            ) AS image_url
+          FROM incident_reports ir
+          LEFT JOIN final_triage ft ON ft.report_id = ir.id
+          WHERE ir.latitude IS NOT NULL AND ir.longitude IS NOT NULL
+            AND ir.latitude BETWEEN :lat_min AND :lat_max
+            AND ir.longitude BETWEEN :lng_min AND :lng_max
         ),
         distances AS (
           SELECT
@@ -33,6 +45,11 @@ def fetch_nearby_incidents(
             description,
             latitude,
             longitude,
+            created_at,
+            incident_type,
+            final_severity,
+            responder_summary,
+            image_url,
             (6371000 * 2 * asin(sqrt(
               power(sin(radians(latitude - :lat) / 2), 2) +
               cos(radians(:lat)) * cos(radians(latitude)) *
@@ -62,6 +79,11 @@ def fetch_nearby_incidents(
             "description": r["description"],
             "latitude": r["latitude"],
             "longitude": r["longitude"],
+            "created_at": r["created_at"],
+            "incident_type": r["incident_type"],
+            "final_severity": r["final_severity"],
+            "responder_summary": r["responder_summary"],
+            "image_url": r["image_url"],
             "distance_m": float(r["distance_m"]),
         }
         for r in rows

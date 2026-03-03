@@ -59,6 +59,11 @@ class NearbyIncidentItem(BaseModel):
     description: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    created_at: Optional[datetime] = None
+    incident_type: Optional[str] = None
+    final_severity: Optional[str] = None
+    responder_summary: Optional[str] = None
+    image_url: Optional[str] = None
     distance_m: float
 
 
@@ -96,6 +101,7 @@ class IncidentDetailResponse(BaseModel):
     longitude: Optional[float] = None
     status: str
     reporter_name: str = "Anonymous"
+    image_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -117,5 +123,7 @@ class IncidentListResponse(BaseModel):
             }
         }
     )
+
+
 
 

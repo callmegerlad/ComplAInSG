@@ -1,18 +1,18 @@
-import asyncio
-from pathlib import Path as FilePath
+import re
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import cast, func, String
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.pipeline import run_triage_pipeline
 from app.core.database import get_db
+from app.models.users import User
 from app.dependencies import get_current_user
 from app.media.media import save_base64_image
 from app.models.media import MediaAsset
 from app.models.triage import FinalTriage, IncidentReport
-from app.models.users import User
 from app.schemas.incidents import (
     IncidentDetailResponse,
     IncidentListResponse,
@@ -24,20 +24,19 @@ from app.services.incident_nearby import fetch_nearby_incidents
 from app.services.realtime import router
 
 
-
 incidents_router = APIRouter(prefix="/incidents", tags=["incidents"])
 
+UPLOAD_DIR = Path("uploads")
+UPLOAD_PATH_RE = re.compile(r"/uploads/([A-Za-z0-9._-]+\.(?:jpg|jpeg|png|webp))", re.IGNORECASE)
 
-UPLOAD_DIR = FilePath("uploads")
 
-
-def severity_radius(sev):
+def severity_radius(sev: str | None) -> int:
     return {
         "CRITICAL": 800,
         "HIGH": 300,
         "MEDIUM": 150,
         "LOW": 0,
-    }.get(sev, 0)
+    }.get((sev or "").upper(), 0)
 
 
 def resolve_reporter_name(incident: IncidentReport) -> str:
@@ -56,52 +55,113 @@ def resolve_reporter_name(incident: IncidentReport) -> str:
     return "Anonymous"
 
 
+def normalize_media_url(raw_url: str | None) -> str | None:
+    """
+    Return a backend-public URL for media.
+    Handles old absolute/container paths by rewriting to /uploads/<filename>.
+    """
+    if not raw_url:
+        return None
+
+    value = raw_url.strip()
+    if not value:
+        return None
+
+    if value.startswith("http://") or value.startswith("https://"):
+        return value
+
+    if value.startswith("/uploads/"):
+        match = UPLOAD_PATH_RE.search(value)
+        if match:
+            return f"/uploads/{match.group(1)}"
+        return value
+
+    normalized = value.replace("\\", "/")
+    match = UPLOAD_PATH_RE.search(normalized)
+    if match:
+        return f"/uploads/{match.group(1)}"
+
+    filename = Path(normalized).name
+    if filename:
+        return f"/uploads/{filename}"
+
+    return None
+
+
+def resolve_primary_image_url(incident: IncidentReport) -> str | None:
+    media_assets = getattr(incident, "media_assets", None) or []
+    if not media_assets:
+        return None
+
+    sorted_assets = sorted(
+        media_assets,
+        key=lambda asset: getattr(asset, "created_at", None) or getattr(asset, "id", ""),
+    )
+    for asset in sorted_assets:
+        media_type = str(getattr(asset, "media_type", "")).upper()
+        if media_type != "MEDIATYPE.IMAGE" and media_type != "IMAGE":
+            continue
+        media_url = normalize_media_url(getattr(asset, "url", None))
+        if media_url:
+            return media_url
+
+    return None
+
+
 def to_incident_detail_response(incident: IncidentReport) -> IncidentDetailResponse:
     payload = IncidentDetailResponse.model_validate(incident).model_dump()
     payload["reporter_name"] = resolve_reporter_name(incident)
+    payload["image_url"] = resolve_primary_image_url(incident)
     return IncidentDetailResponse(**payload)
 
 
 @incidents_router.post("/triage")
-async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-
+async def triage(
+    req: IncidentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     incident_id = str(uuid4())
-    saved_path = None
+    saved_public_path: str | None = None
+    media_sha256: str | None = None
 
     if req.image_url:
         try:
-            saved_path = save_base64_image(req.image_url, UPLOAD_DIR)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-    final, vision, text_triage, metadata = await run_triage_pipeline(
+            saved_public_path, media_sha256 = save_base64_image(req.image_url, UPLOAD_DIR)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    final, _vision, _text_triage, metadata = await run_triage_pipeline(
         req.location,
         req.description,
-        req.image_url
+        req.image_url,
     )
 
-    radius = severity_radius(final.final_severity)
+    radius = severity_radius(getattr(final, "final_severity", None))
+
     incident = IncidentReport(
         id=incident_id,
         reporter_id=current_user.id,
         location_text=req.location,
         description=req.description,
         latitude=req.lat,
-        longitude=req.lng,)
-    
+        longitude=req.lng,
+    )
     db.add(incident)
     db.commit()
     db.refresh(incident)
-    if saved_path:
+
+    if saved_public_path:
         media = MediaAsset(
             id=str(uuid4()),
             report_id=incident.id,
             media_type="IMAGE",
-            url=saved_path,
+            url=saved_public_path,
+            sha256=media_sha256,
             created_at=incident.created_at,
         )
         db.add(media)
         db.commit()
-        db.refresh(media)
 
     triage_entry = FinalTriage(
         report_id=incident.id,
@@ -116,7 +176,7 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db), current_us
     )
     db.add(triage_entry)
     db.commit()
-    db.refresh(triage_entry)
+
     if radius > 0:
         payload = {
             "type": "ALERT",
@@ -170,6 +230,7 @@ def list_incidents(
         .options(
             selectinload(IncidentReport.final_triage),
             selectinload(IncidentReport.reporter),
+            selectinload(IncidentReport.media_assets),
         )
         .order_by(IncidentReport.created_at.desc())
         .offset(skip)
@@ -179,7 +240,60 @@ def list_incidents(
 
     return IncidentListResponse(
         total=total,
-        incidents=[to_incident_detail_response(incident) for incident in incidents],
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
+    )
+
+
+@incidents_router.get("/search", response_model=IncidentListResponse)
+def search_incidents(
+    db: Session = Depends(get_db),
+    query: str = Query(default="", min_length=0, max_length=200),
+    incident_type: str = Query(default="", min_length=0),
+    severity: str = Query(default="", min_length=0),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    """Search incident reports by text query, type, and severity."""
+    q = db.query(IncidentReport).options(
+        selectinload(IncidentReport.final_triage),
+        selectinload(IncidentReport.reporter),
+    )
+
+    # Text search across location and description
+    if query.strip():
+        search_term = f"%{query.strip()}%"
+        q = q.filter(
+            (IncidentReport.location_text.ilike(search_term)) |
+            (IncidentReport.description.ilike(search_term))
+        )
+
+    # Filter by incident type (cast enum to string for comparison)
+    if incident_type.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.incident_type, String).ilike(
+                f"%{incident_type.strip()}%")
+        )
+
+    # Filter by severity (cast enum to string for comparison)
+    if severity.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.final_severity, String).ilike(
+                f"%{severity.strip()}%")
+        )
+
+    total = q.count()
+    incidents = (
+        q.order_by(IncidentReport.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    return IncidentListResponse(
+        total=total,
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
     )
 
 
@@ -191,6 +305,7 @@ def get_incident(incident_id: str, db: Session = Depends(get_db)):
         .options(
             selectinload(IncidentReport.final_triage),
             selectinload(IncidentReport.reporter),
+            selectinload(IncidentReport.media_assets),
         )
         .filter(IncidentReport.id == incident_id)
         .first()
@@ -203,5 +318,3 @@ def get_incident(incident_id: str, db: Session = Depends(get_db)):
         )
 
     return to_incident_detail_response(incident)
-
-

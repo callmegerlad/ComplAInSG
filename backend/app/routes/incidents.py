@@ -1,19 +1,18 @@
-from pathlib import Path
 import re
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import cast, func, String
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.pipeline import run_triage_pipeline
 from app.core.database import get_db
+from app.models.users import User
 from app.dependencies import get_current_user
-from app.media.media import save_base64_image
 from app.media.media import save_base64_image
 from app.models.media import MediaAsset
 from app.models.triage import FinalTriage, IncidentReport
-from app.models.users import User
 from app.schemas.incidents import (
     IncidentDetailResponse,
     IncidentListResponse,
@@ -241,7 +240,60 @@ def list_incidents(
 
     return IncidentListResponse(
         total=total,
-        incidents=[to_incident_detail_response(incident) for incident in incidents],
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
+    )
+
+
+@incidents_router.get("/search", response_model=IncidentListResponse)
+def search_incidents(
+    db: Session = Depends(get_db),
+    query: str = Query(default="", min_length=0, max_length=200),
+    incident_type: str = Query(default="", min_length=0),
+    severity: str = Query(default="", min_length=0),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    """Search incident reports by text query, type, and severity."""
+    q = db.query(IncidentReport).options(
+        selectinload(IncidentReport.final_triage),
+        selectinload(IncidentReport.reporter),
+    )
+
+    # Text search across location and description
+    if query.strip():
+        search_term = f"%{query.strip()}%"
+        q = q.filter(
+            (IncidentReport.location_text.ilike(search_term)) |
+            (IncidentReport.description.ilike(search_term))
+        )
+
+    # Filter by incident type (cast enum to string for comparison)
+    if incident_type.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.incident_type, String).ilike(
+                f"%{incident_type.strip()}%")
+        )
+
+    # Filter by severity (cast enum to string for comparison)
+    if severity.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.final_severity, String).ilike(
+                f"%{severity.strip()}%")
+        )
+
+    total = q.count()
+    incidents = (
+        q.order_by(IncidentReport.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    return IncidentListResponse(
+        total=total,
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
     )
 
 

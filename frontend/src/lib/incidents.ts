@@ -1,6 +1,9 @@
 import type { Incident } from "@/app/components/home/IncidentCard";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/+$/, "");
+const MEDIA_BASE_URL = API_BASE_URL.endsWith("/api")
+  ? API_BASE_URL.slice(0, -4)
+  : API_BASE_URL;
 
 export type IncidentTimeGroup =
   | "HAPPENING NOW"
@@ -210,6 +213,28 @@ export async function fetchIncidentById(incidentId: string) {
   return mapApiIncidentToIncident(data);
 }
 
+export async function searchIncidents(
+  searchQuery: string,
+  incidentType: string = "",
+  severity: string = "",
+  skip: number = 0,
+  limit: number = 20,
+) {
+  const query = new URLSearchParams({
+    query: searchQuery,
+    incident_type: incidentType,
+    severity,
+    skip: String(skip),
+    limit: String(limit),
+  });
+
+  const data = await request<ApiIncidentListResponse>(`/incidents/search?${query.toString()}`);
+
+  return {
+    total: data.total,
+    incidents: data.incidents.map((incident) => mapApiIncidentToIncident(incident)),
+  };
+}
 export async function fetchNearbyIncidents(
   lat: number,
   lng: number,
@@ -395,8 +420,29 @@ function getCategoryMeta(incidentType: string): IncidentCategory {
   return INCIDENT_CATEGORIES[4];
 }
 
+/**
+ * Parse an ISO datetime string from the backend as UTC.
+ *
+ * FastAPI/SQLAlchemy serialize naive datetime objects without a timezone
+ * suffix (e.g. "2026-03-03T08:00:00"). JavaScript's Date constructor treats
+ * such strings as *local* time, which in UTC+8 shifts the epoch value 8 hours
+ * earlier and inflates any "time ago" calculation by 8 hours.
+ *
+ * We normalise by appending "Z" when no timezone indicator is present so the
+ * value is always interpreted as UTC.
+ */
+function parseUtcDate(isoString: string): Date {
+  if (!isoString) return new Date(Number.NaN);
+  // Already has a timezone indicator? Parse as-is.
+  if (isoString.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(isoString)) {
+    return new Date(isoString);
+  }
+  // Naive string → treat as UTC
+  return new Date(isoString + "Z");
+}
+
 function toTimeGroup(createdAtIso: string): IncidentTimeGroup {
-  const createdAt = new Date(createdAtIso).getTime();
+  const createdAt = parseUtcDate(createdAtIso).getTime();
 
   if (Number.isNaN(createdAt)) {
     return "EARLIER TODAY";
@@ -416,7 +462,7 @@ function toTimeGroup(createdAtIso: string): IncidentTimeGroup {
 }
 
 function formatRelativeTime(createdAtIso: string): string {
-  const createdAt = new Date(createdAtIso).getTime();
+  const createdAt = parseUtcDate(createdAtIso).getTime();
 
   if (Number.isNaN(createdAt)) {
     return "Recent";
@@ -449,9 +495,17 @@ function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefin
     return undefined;
   }
 
-  const value = rawUrl.trim();
+  let value = rawUrl.trim();
   if (!value) {
     return undefined;
+  }
+
+  if (value.startsWith("(") && value.endsWith(")")) {
+    value = value.slice(1, -1);
+  }
+
+  if (value.includes(",")) {
+    value = value.split(",")[0].trim();
   }
 
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -459,10 +513,10 @@ function toAbsoluteMediaUrl(rawUrl: string | null | undefined): string | undefin
   }
 
   if (value.startsWith("/")) {
-    return `${API_BASE_URL}${value}`;
+    return `${MEDIA_BASE_URL}${value}`;
   }
 
-  return `${API_BASE_URL}/${value}`;
+  return `${MEDIA_BASE_URL}/${value}`;
 }
 
 function formatDistanceMeters(distanceMeters: number): string {

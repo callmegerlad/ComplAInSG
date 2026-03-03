@@ -6,6 +6,7 @@ import { MapPage } from "./pages/MapPage";
 import { NotificationsPage } from "./pages/Notifications";
 import { ProfilePage } from "./pages/Profile";
 import { IncidentDetailsPage } from "./pages/IncidentDetails";
+import { SearchPage } from "./pages/Search";
 import { AuthPage } from "./pages/Auth";
 import { RequireAuth, PublicOnlyAuthRoute } from "./components/auth/AuthGuards";
 
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           { index: true, Component: HomePage },
           { path: "feed", Component: FeedPage },
           { path: "map", Component: MapPage },
+          { path: "search", Component: SearchPage },
           { path: "incidents/:incidentId", Component: IncidentDetailsPage },
           { path: "notifications", Component: NotificationsPage },
           { path: "profile", Component: ProfilePage },

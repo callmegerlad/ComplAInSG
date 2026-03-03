@@ -1,4 +1,5 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { getUserInitials } from "@/lib/auth";
 import { useAlerts } from "@/app/providers/AlertsProvider";
@@ -12,6 +13,15 @@ export function TopBar({ showSearch = true }: TopBarProps) {
   const { user } = useAuth();
   const { unreadCount } = useAlerts();
   const initials = getUserInitials(user);
+  const navigate = useNavigate();
+  const [searchInput, setSearchInput] = useState("");
+
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchInput)}`);
+    }
+  }
 
   return (
     <div className="sticky top-0 z-50 bg-surface-1/90 backdrop-blur-md border-b border-border-subtle">
@@ -54,19 +64,22 @@ export function TopBar({ showSearch = true }: TopBarProps) {
       </div>
       
       {showSearch && (
-        <div className="px-4 pb-2">
+        <form onSubmit={handleSearchSubmit} className="px-4 pb-2">
           <label className="flex flex-col w-full">
             <div className="flex w-full flex-1 items-center rounded-xl h-12 border border-accent-primary/30 focus-within:border-accent-primary bg-surface-1 transition-colors overflow-hidden">
               <div className="text-text-disabled flex items-center justify-center pl-4">
                 <span className="material-symbols-outlined text-[20px]">search</span>
               </div>
               <input 
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="flex w-full min-w-0 flex-1 text-text-primary focus:outline-0 bg-transparent h-full placeholder:text-text-disabled px-4 pl-2 text-[20px] font-normal" 
                 placeholder="Search incidents or locations" 
               />
             </div>
           </label>
-        </div>
+        </form>
       )}
     </div>
   );

@@ -67,7 +67,7 @@ export function IncidentCard({ incident }: { incident: Incident }) {
               {incident.category}
             </span>
             <span
-              className="rounded-full px-2 py-0.5 font-mono text-[10px] font-bold text-white"
+              className="rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white"
               style={{ backgroundColor: getSeverityColor(incident.severity) }}
             >
               {incident.severity}

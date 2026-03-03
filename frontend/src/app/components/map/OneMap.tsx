@@ -18,7 +18,7 @@ export function OneMap({ config, className = "" }: OneMapProps) {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full overflow-hidden rounded-2xl border border-border-subtle bg-surface-2 ${className}`}
+      className={`relative w-full overflow-hidden bg-surface-2 ${className}`}
     >
       <iframe
         src={mapUrl}

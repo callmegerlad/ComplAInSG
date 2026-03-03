@@ -1,8 +1,18 @@
-# ComplAInSG
+<div align="center">
+  <img src="frontend/src/assets/logo.svg" alt="ComplAIn SG Logo" width="120" />
+</div>
 
+<h1 align="center" style="font-size: 2em; font-weight: bold; letter-spacing: -0.5px;">
+ðŸš¨ Compl<span style="color: #507DBC;">AI</span>n<span style="color: #EE2536;">SG</span>
+</h1>
+
+<div align="center">
 AI-powered community incident reporting and triage platform.
-
+</div>
+<br />
+<div align="center">
 ComplAInSG lets users submit incidents (with optional image), triage reports with AI, surface nearby incidents, and receive realtime location-aware alerts.
+</div>
 
 ## Tech Stack
 
@@ -17,20 +27,20 @@ ComplAInSG lets users submit incidents (with optional image), triage reports wit
 ```text
 .
 +-- backend/
-¦   +-- app/
-¦   ¦   +-- routes/         # users, incidents, alerts, ws_alerts
-¦   ¦   +-- models/         # users, triage, media, alert_events
-¦   ¦   +-- schemas/        # request/response models
-¦   ¦   +-- services/       # nearby + realtime logic
-¦   ¦   +-- main.py         # FastAPI entrypoint
-¦   +-- alembic/            # DB migrations
-¦   +-- requirements.txt
-¦   +-- .env.example
+ï¿½   +-- app/
+ï¿½   ï¿½   +-- routes/         # users, incidents, alerts, ws_alerts
+ï¿½   ï¿½   +-- models/         # users, triage, media, alert_events
+ï¿½   ï¿½   +-- schemas/        # request/response models
+ï¿½   ï¿½   +-- services/       # nearby + realtime logic
+ï¿½   ï¿½   +-- main.py         # FastAPI entrypoint
+ï¿½   +-- alembic/            # DB migrations
+ï¿½   +-- requirements.txt
+ï¿½   +-- .env.example
 +-- frontend/
-¦   +-- src/app/pages/      # Home, Map, Notifications, Profile, Search
-¦   +-- src/app/providers/  # AuthProvider, AlertsProvider
-¦   +-- src/lib/            # API clients (auth/incidents/alerts/location)
-¦   +-- package.json
+ï¿½   +-- src/app/pages/      # Home, Map, Notifications, Profile, Search
+ï¿½   +-- src/app/providers/  # AuthProvider, AlertsProvider
+ï¿½   +-- src/lib/            # API clients (auth/incidents/alerts/location)
+ï¿½   +-- package.json
 +-- testbench/              # judge testing assets and runbook
 +-- docker-compose.yml
 ```

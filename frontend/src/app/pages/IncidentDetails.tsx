@@ -26,14 +26,6 @@ interface NewReportState {
   locationLabel?: string;
 }
 
-const FALLBACK_INCIDENT_IMAGE =
-  "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=1200&auto=format&fit=crop";
-
-const galleryImages = [
-  "https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1200&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
-];
-
 const initialLiveUpdates = [
   {
     id: "1",
@@ -214,7 +206,7 @@ export function IncidentDetailsPage() {
               <div>
                 <h1 className="text-[20px] font-bold text-text-primary">Incident Detail</h1>
                 <p className="mt-1 text-[12px] text-text-secondary">
-                  ID: SG-{formatIncidentId(incident.id)} · {incident.location}
+                  ID: SG-{formatIncidentId(incident.id)} ï¿½ {incident.location}
                 </p>
               </div>
             </div>
@@ -250,26 +242,17 @@ export function IncidentDetailsPage() {
             </section>
           </div>
 
-          <div className="flex gap-3 overflow-x-auto px-4 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {[incident.imageUrl || FALLBACK_INCIDENT_IMAGE, ...galleryImages].map((src, index) => (
-              <div
-                key={`${src}-${index}`}
-                className="relative h-48 min-w-[280px] overflow-hidden rounded-2xl bg-surface-2 shadow-card"
-              >
-                <ImageWithFallback src={src} alt={incident.title} className="h-full w-full object-cover" />
+          {incident.imageUrl ? (
+            <div className="px-4 py-2">
+              <div className="relative h-48 overflow-hidden rounded-2xl bg-surface-2 shadow-card">
+                <ImageWithFallback src={incident.imageUrl} alt={incident.title} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,24,44,0.08)_0%,rgba(10,24,44,0.44)_100%)]" />
-                {index === 0 ? (
-                  <div className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                    Live Photo
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[52px] text-white/90">play_circle</span>
-                  </div>
-                )}
+                <div className="absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                  Reported Photo
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 p-4">
             <section className="rounded-2xl border border-border-subtle bg-surface-1 p-4 shadow-card">
@@ -343,22 +326,6 @@ export function IncidentDetailsPage() {
                 </button>
               </div>
             </div>
-
-            <section>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-text-secondary">Nearby Responders</p>
-              <div className="relative h-48 overflow-hidden rounded-2xl border border-border-subtle bg-surface-2 shadow-card">
-                <ImageWithFallback
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop"
-                  alt="Responder map"
-                  className="h-full w-full object-cover opacity-35 grayscale"
-                />
-                <div className="absolute inset-0">
-                  <div className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full border-2 border-white bg-danger" />
-                  <div className="absolute left-[24%] top-[34%] h-3 w-3 rounded-full border-2 border-white bg-success" />
-                  <div className="absolute bottom-[26%] right-[30%] h-3 w-3 rounded-full border-2 border-white bg-success" />
-                </div>
-              </div>
-            </section>
 
             <section className="border-t border-border-subtle pt-4">
               <div className="mb-4 flex items-center justify-between">

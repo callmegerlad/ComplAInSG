@@ -1,7 +1,6 @@
-from pathlib import Path
 import re
+from pathlib import Path
 from uuid import uuid4
-from pathlib import Path as FilePath
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import cast, func, String
@@ -9,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.agents.pipeline import run_triage_pipeline
 from app.core.database import get_db
+from app.models.users import User
 from app.dependencies import get_current_user
 from app.media.media import save_base64_image
 from app.models.media import MediaAsset

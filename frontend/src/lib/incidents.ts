@@ -204,6 +204,28 @@ export async function fetchIncidentById(incidentId: string) {
   return mapApiIncidentToIncident(data);
 }
 
+export async function searchIncidents(
+  searchQuery: string,
+  incidentType: string = "",
+  severity: string = "",
+  skip: number = 0,
+  limit: number = 20,
+) {
+  const query = new URLSearchParams({
+    query: searchQuery,
+    incident_type: incidentType,
+    severity,
+    skip: String(skip),
+    limit: String(limit),
+  });
+
+  const data = await request<ApiIncidentListResponse>(`/incidents/search?${query.toString()}`);
+
+  return {
+    total: data.total,
+    incidents: data.incidents.map((incident) => mapApiIncidentToIncident(incident)),
+  };
+}
 export async function fetchNearbyIncidents(
   lat: number,
   lng: number,

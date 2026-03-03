@@ -1,8 +1,8 @@
-import asyncio
 from uuid import uuid4
+from pathlib import Path as FilePath
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import cast, func, String
 from sqlalchemy.orm import Session, selectinload
 
 from app.agents.pipeline import run_triage_pipeline
@@ -10,7 +10,6 @@ from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.models.media import MediaAsset
 from app.models.triage import FinalTriage, IncidentReport
-from app.models.users import User
 from app.schemas.incidents import (
     IncidentDetailResponse,
     IncidentListResponse,
@@ -19,17 +18,8 @@ from app.schemas.incidents import (
     NearbyIncidentsResponse,
 )
 from app.services.incident_nearby import fetch_nearby_incidents
-from app.services.realtime import router
-from app.models.triage import IncidentReport, FinalTriage
-from app.models.media import MediaAsset
-from app.core.database import get_db
-from sqlalchemy.orm import Session
 from app.media.media import save_base64_image
-from pathlib import Path as FilePath
-from app.services.incident_nearby import fetch_nearby_incidents
-from app.dependencies import get_current_user
-from app.models.users import User
-
+from app.services.realtime import router
 
 
 incidents_router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -94,7 +84,7 @@ async def triage(req: IncidentRequest, db: Session = Depends(get_db)):
         description=req.description,
         latitude=req.lat,
         longitude=req.lng,)
-    
+
     db.add(incident)
     db.commit()
     db.refresh(incident)
@@ -186,7 +176,60 @@ def list_incidents(
 
     return IncidentListResponse(
         total=total,
-        incidents=[to_incident_detail_response(incident) for incident in incidents],
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
+    )
+
+
+@incidents_router.get("/search", response_model=IncidentListResponse)
+def search_incidents(
+    db: Session = Depends(get_db),
+    query: str = Query(default="", min_length=0, max_length=200),
+    incident_type: str = Query(default="", min_length=0),
+    severity: str = Query(default="", min_length=0),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    """Search incident reports by text query, type, and severity."""
+    q = db.query(IncidentReport).options(
+        selectinload(IncidentReport.final_triage),
+        selectinload(IncidentReport.reporter),
+    )
+
+    # Text search across location and description
+    if query.strip():
+        search_term = f"%{query.strip()}%"
+        q = q.filter(
+            (IncidentReport.location_text.ilike(search_term)) |
+            (IncidentReport.description.ilike(search_term))
+        )
+
+    # Filter by incident type (cast enum to string for comparison)
+    if incident_type.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.incident_type, String).ilike(
+                f"%{incident_type.strip()}%")
+        )
+
+    # Filter by severity (cast enum to string for comparison)
+    if severity.strip():
+        q = q.join(FinalTriage).filter(
+            cast(FinalTriage.final_severity, String).ilike(
+                f"%{severity.strip()}%")
+        )
+
+    total = q.count()
+    incidents = (
+        q.order_by(IncidentReport.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    return IncidentListResponse(
+        total=total,
+        incidents=[to_incident_detail_response(
+            incident) for incident in incidents],
     )
 
 
@@ -210,5 +253,3 @@ def get_incident(incident_id: str, db: Session = Depends(get_db)):
         )
 
     return to_incident_detail_response(incident)
-
-

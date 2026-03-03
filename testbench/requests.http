@@ -1,0 +1,56 @@
+@baseUrl = http://localhost:8000
+@token = REPLACE_WITH_BEARER_TOKEN
+@incidentId = REPLACE_WITH_INCIDENT_ID
+
+### Health
+GET {{baseUrl}}/health
+
+### Register
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+< ./sample_payloads/register.json
+
+### Login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+< ./sample_payloads/login.json
+
+### Current user
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### Submit incident triage
+POST {{baseUrl}}/incidents/triage
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+< ./sample_payloads/triage_incident.json
+
+### List incidents
+GET {{baseUrl}}/incidents?skip=0&limit=20
+
+### Search incidents
+GET {{baseUrl}}/incidents/search?query=fight&incident_type=&severity=High&skip=0&limit=20
+
+### Nearby incidents
+GET {{baseUrl}}/incidents/nearby?lat=1.3521&lng=103.8198&radius_m=5000&limit=20
+
+### Alerts feed
+GET {{baseUrl}}/alerts/feed?lat=1.3521&lng=103.8198&radius_m=5000&limit=30
+Authorization: Bearer {{token}}
+
+### Log alert event (responding)
+POST {{baseUrl}}/alerts/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+< ./sample_payloads/alert_event_responding.json
+
+### Log alert event (open)
+POST {{baseUrl}}/alerts/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+< ./sample_payloads/alert_event_open.json

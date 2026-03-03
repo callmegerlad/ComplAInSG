@@ -1,200 +1,113 @@
-<div align="center">
-  <img src="frontend/src/assets/logo.svg" alt="ComplAIn SG Logo" width="120" />
-</div>
+# ComplAInSG
 
-<h1 align="center" style="font-size: 2em; font-weight: bold; letter-spacing: -0.5px;">
-üö® Compl<span style="color: #507DBC;">AI</span>n<span style="color: #EE2536;">SG</span>
-</h1>
-<div align="center">
-This project is developed as part of Deep Learning Week 2026.
-</div>
-<div align="center">
-AI-powered incident reporting platform for smarter, faster, and trust-aware community safety.
-</div>
+AI-powered community incident reporting and triage platform.
 
-<br/>
+ComplAInSG lets users submit incidents (with optional image), triage reports with AI, surface nearby incidents, and receive realtime location-aware alerts.
 
-<div align="center">
-Built with Next.js ¬∑ FastAPI ¬∑ PostgreSQL ¬∑ Docker
-</div>
+## Tech Stack
 
----
+- Frontend: React + Vite + TypeScript + React Router
+- Backend: FastAPI + SQLAlchemy + Alembic
+- Database: PostgreSQL
+- Realtime: WebSocket alerts
+- Infra: Docker Compose
 
-## üß† About
+## Repository Structure
 
-ComplAInSG is an AI-powered incident reporting system that enables the public to quickly submit safety-related reports ‚Äî with optional image uploads ‚Äî and receive structured AI-assisted triage.
-
-It is designed to balance:
-
-‚ö° Speed of reporting  
-üîí Trust & credibility  
-ü§ñ Intelligent interpretation  
-
-Unlike traditional reporting systems that are either slow or fully anonymous without verification, ComplAInSG introduces a flexible reporting approach that supports both accessibility and reliability.
-
----
-
-## üöÄ Features
-
-Users can:
-
-- Submit incident reports via web interface  
-- Upload supporting images  
-- Report as a verified user 
-- Receive AI-generated triage output including:
-  - Incident category  
-  - Suggested severity  
-  - Confidence score  
-  - Recommended next actions  
-
-All reports are stored and retrievable through API endpoints.
-
----
-
-## üèóÔ∏è Tech Stack
-
-| Layer        | Technology        |
-|--------------|-------------------|
-| Frontend     | Next.js           |
-| Backend      | FastAPI           |
-| Database     | PostgreSQL        |
-| Infra        | Docker            |
-
----
-
-## üê≥ Running ComplAInSG
-
-Ensure Docker is installed.
-
-Clone the repository:
-
-```bash
-git clone https://github.com/callmegerlad/ComplAInSG.git
-cd ComplAInSG
+```text
+.
++-- backend/
+¶   +-- app/
+¶   ¶   +-- routes/         # users, incidents, alerts, ws_alerts
+¶   ¶   +-- models/         # users, triage, media, alert_events
+¶   ¶   +-- schemas/        # request/response models
+¶   ¶   +-- services/       # nearby + realtime logic
+¶   ¶   +-- main.py         # FastAPI entrypoint
+¶   +-- alembic/            # DB migrations
+¶   +-- requirements.txt
+¶   +-- .env.example
++-- frontend/
+¶   +-- src/app/pages/      # Home, Map, Notifications, Profile, Search
+¶   +-- src/app/providers/  # AuthProvider, AlertsProvider
+¶   +-- src/lib/            # API clients (auth/incidents/alerts/location)
+¶   +-- package.json
++-- testbench/              # judge testing assets and runbook
++-- docker-compose.yml
 ```
 
-Create your `.env` file:
+## Key Features
 
-```bash
-cp .env.example .env
-```
+- User registration/login and profile (`/users/*`)
+- Incident submission + AI triage (`POST /incidents/triage`)
+- Incident list/detail/search/nearby endpoints
+- Media upload and serving from `/uploads/*`
+- Realtime websocket alerts based on user location (`/ws/alerts`)
+- Alert feed + event tracking (`/alerts/feed`, `/alerts/events`)
+- Profile trust/badges/responses based on activity
 
-Example minimal configuration:
+## Prerequisites
 
-```env
+- Docker + Docker Compose (recommended)
+- Or for local non-Docker run:
+  - Python 3.11+
+  - Node.js 20+
+  - PostgreSQL 15+
 
-DATABASE_URL=postgresql://complainsg:complainsg@localhost:5432/complainsg
-MODEL_NAME=gpt-5.1
-OPENAI_API_KEY=your_key_here
+## Option A: Run with Docker (Recommended)
 
-```
-
-Run the system:
+From repository root:
 
 ```bash
 docker compose up --build
 ```
 
----
+App URLs:
 
-## üåê Access
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- Swagger Docs: http://localhost:8000/docs
 
-Frontend  
-‚Üí http://localhost:5173  
-
-Backend API  
-‚Üí http://localhost:8000  
-
-API Docs  
-‚Üí http://localhost:8000/docs  
-
----
-
-## üì° API Usage
-
-Create Report:
-
-```
-POST /api/reports
-```
-
-Example payload:
-
-```json
-{
-  "title": "Suspicious package",
-  "description": "Unattended bag near MRT platform",
-  "location": "Jurong East MRT",
-  "severity": "medium",
-  "reporter_mode": "anonymous"
-}
-```
-
-Fetch Report:
-
-```
-GET /api/reports/{report_id}
-```
-
----
-
-## üñºÔ∏è Image Upload Example
-
-```bash
-curl -X POST "http://localhost:8000/api/reports/with-image" \
-  -F "title=Smoke seen" \
-  -F "description=Possible electrical fire" \
-  -F "location=NTU" \
-  -F "severity=high" \
-  -F "image=@testbench/sample_images/sample_smoke.jpg"
-```
-
----
-
-## ü§ñ Example AI Output
-
-```json
-{
-  "category": "Fire/Smoke",
-  "severity_suggested": "high",
-  "confidence": 0.82,
-  "recommended_actions": [
-    "Move away from smoke",
-    "Notify building management",
-    "Call emergency services if risk escalates"
-  ]
-}
-```
-
----
-
-## üß™ Testing
-
-Judges can validate the system using:
-
-```
-testbench/SETUP_AND_RUN.md
-```
-
-This includes:
-
-- Sample API requests  
-- Image test inputs  
-- Expected AI output structure  
-
----
-
-## üß∞ Local Development (Without Docker)
-
-Backend:
+Run DB migrations (first run and after schema changes):
 
 ```bash
 cd backend
+alembic upgrade head
+```
+
+## Option B: Run Locally (Without Docker)
+
+### 1) Backend
+
+```bash
+cd backend
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+# source .venv/bin/activate
+
 pip install -r requirements.txt
+```
+
+Create `backend/.env` from `backend/.env.example`:
+
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+MODEL_NAME=gpt-4.1-mini
+DATABASE_URL=postgresql://complainsg:complainsg@localhost:5432/complainsg
+ALLOWED_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
+ALLOWED_ORIGIN_REGEX=https?://(localhost|127\.0\.0\.1)(:\d+)?
+JWT_SECRET_KEY=complainsg-jwt-secret-key
+```
+
+Then run:
+
+```bash
+alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Frontend:
+### 2) Frontend
 
 ```bash
 cd frontend
@@ -202,9 +115,61 @@ npm install
 npm run dev
 ```
 
----
+Set API URL if needed:
 
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-<div align="center">
-Built for Deep Learning Week 2026 üöÄ
-</div>
+## Core API Endpoints
+
+### Health
+- `GET /health`
+
+### Users/Auth
+- `POST /users/register`
+- `POST /users/login`
+- `GET /users/me`
+- `PATCH /users/me`
+- `DELETE /users/me`
+
+### Incidents
+- `POST /incidents/triage`
+- `GET /incidents`
+- `GET /incidents/{incident_id}`
+- `GET /incidents/search`
+- `GET /incidents/nearby`
+
+### Alerts
+- `GET /alerts/feed`
+- `POST /alerts/events`
+- `WS /ws/alerts`
+
+## Realtime Alert Flow
+
+1. Frontend opens websocket to `/ws/alerts`.
+2. Frontend sends `LOCATION_UPDATE` messages.
+3. Backend checks user distance against incident alert radius.
+4. Backend pushes `ALERT` payloads for nearby incidents.
+5. Frontend shows bell badge + Notifications list.
+6. User actions are tracked via `/alerts/events` (`received`, `open`, `view_incident`, `responding`).
+
+## Testbench for Judges
+
+Use the provided testbench assets:
+
+- [testbench/SETUP_AND_RUN.md](testbench/SETUP_AND_RUN.md)
+- [testbench/requests.http](testbench/requests.http)
+- [testbench/sample_payloads/](testbench/sample_payloads)
+- [testbench/expected_results.md](testbench/expected_results.md)
+
+## Common Troubleshooting
+
+- CORS blocked: verify `ALLOWED_ORIGINS` includes frontend URL.
+- Migrations missing: run `alembic upgrade head`.
+- No alerts: grant browser location permission and keep app open.
+- Upload image 404: confirm file exists in `backend/uploads` and URL is `/uploads/<filename>`.
+
+## License
+
+Deep Learning Week 2026 project/demo use.

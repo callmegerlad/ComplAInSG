@@ -16,7 +16,16 @@ export function HomePage() {
   const [incidentItems, setIncidentItems] = useState<Incident[]>([]);
   const [incidentLoadError, setIncidentLoadError] = useState<string | null>(null);
   const { label: currentLocation, lastUpdated, lat, lng } = useCurrentLocation();
-  const recommendedIncident = incidentItems[0];
+  const recommendedIncident =
+    incidentItems.length > 0
+      ? [...incidentItems].sort((left, right) => {
+          const severityDiff = getSeverityPriority(right.severity) - getSeverityPriority(left.severity);
+          if (severityDiff !== 0) {
+            return severityDiff;
+          }
+          return parseDistanceToMeters(left.distance) - parseDistanceToMeters(right.distance);
+        })[0]
+      : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -274,4 +283,24 @@ function getSeverityColor(severity: Incident["severity"]) {
   if (severity === "High") return "var(--cat-fight)";
   if (severity === "Medium") return "var(--cat-transport)";
   return "var(--success)";
+}
+
+function getSeverityPriority(severity: Incident["severity"]) {
+  if (severity === "High") return 3;
+  if (severity === "Medium") return 2;
+  return 1;
+}
+
+function parseDistanceToMeters(distance: string) {
+  const normalized = distance.trim().toLowerCase();
+  if (!normalized) return Number.POSITIVE_INFINITY;
+  if (normalized.endsWith("km")) {
+    const value = Number.parseFloat(normalized.replace("km", ""));
+    return Number.isFinite(value) ? value * 1000 : Number.POSITIVE_INFINITY;
+  }
+  if (normalized.endsWith("m")) {
+    const value = Number.parseFloat(normalized.replace("m", ""));
+    return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+  }
+  return Number.POSITIVE_INFINITY;
 }

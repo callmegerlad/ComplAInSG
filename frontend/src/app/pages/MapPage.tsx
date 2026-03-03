@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/layout/TopBar";
 import { IncidentCard } from "../components/home/IncidentCard";
 import { IncidentFilters } from "../components/incidents/IncidentFilters";
@@ -18,11 +18,6 @@ export function MapPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [allIncidents, setAllIncidents] = useState<IncidentWithMeta[]>(fallbackIncidents);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [focusedIncidentId, setFocusedIncidentId] = useState<string | undefined>(undefined);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
-  const listContainerRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const focusUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { lat: userLat, lng: userLng } = useCurrentLocation();
 
   useEffect(() => {
@@ -56,99 +51,6 @@ export function MapPage() {
   const filteredIncidents = filterIncidents(allIncidents, filters);
   const categories = getIncidentCategories(allIncidents);
 
-  useEffect(() => {
-    setFocusedIncidentId(filteredIncidents[0]?.id);
-  }, [filteredIncidents]);
-
-  useEffect(() => {
-    const root = listContainerRef.current;
-    if (!root || filteredIncidents.length === 0) {
-      return;
-    }
-
-    const visibilityById = new Map<string, number>();
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const target = entry.target as HTMLDivElement;
-          const id = target.dataset.incidentId;
-          if (!id) {
-            continue;
-          }
-
-          if (entry.isIntersecting) {
-            visibilityById.set(id, entry.intersectionRatio);
-          } else {
-            visibilityById.delete(id);
-          }
-        }
-
-        const nextFocused = filteredIncidents
-          .map((incident) => ({
-            id: incident.id,
-            ratio: visibilityById.get(incident.id) ?? 0,
-          }))
-          .filter((item) => item.ratio > 0)
-          .sort((left, right) => right.ratio - left.ratio)[0]?.id;
-
-        if (nextFocused) {
-          if (focusUpdateTimeoutRef.current) {
-            clearTimeout(focusUpdateTimeoutRef.current);
-          }
-
-          focusUpdateTimeoutRef.current = setTimeout(() => {
-            setFocusedIncidentId((current) => (current === nextFocused ? current : nextFocused));
-          }, 120);
-        }
-      },
-      {
-        root,
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-        rootMargin: "-35% 0px -35% 0px",
-      },
-    );
-
-    for (const incident of filteredIncidents) {
-      const element = itemRefs.current.get(incident.id);
-      if (element) {
-        observer.observe(element);
-      }
-    }
-
-    return () => {
-      observer.disconnect();
-      if (focusUpdateTimeoutRef.current) {
-        clearTimeout(focusUpdateTimeoutRef.current);
-      }
-    };
-  }, [filteredIncidents]);
-
-  const focusedIncident = useMemo(() => {
-    const incidentInView = filteredIncidents.find((incident) => incident.id === focusedIncidentId);
-    if (incidentInView?.lat != null && incidentInView?.lng != null) {
-      return incidentInView;
-    }
-
-    return filteredIncidents.find((incident) => incident.lat != null && incident.lng != null);
-  }, [filteredIncidents, focusedIncidentId]);
-
-  useEffect(() => {
-    if (
-      focusedIncident &&
-      typeof focusedIncident.lat === "number" &&
-      typeof focusedIncident.lng === "number" &&
-      Number.isFinite(focusedIncident.lat) &&
-      Number.isFinite(focusedIncident.lng) &&
-      focusedIncident.lat >= -90 &&
-      focusedIncident.lat <= 90 &&
-      focusedIncident.lng >= -180 &&
-      focusedIncident.lng <= 180
-    ) {
-      setMapCenter({ lat: focusedIncident.lat, lng: focusedIncident.lng });
-    }
-  }, [focusedIncident]);
-
   const mappableIncidents = useMemo(
     () =>
       filteredIncidents
@@ -161,7 +63,7 @@ export function MapPage() {
             incident.lat >= -90 &&
             incident.lat <= 90 &&
             incident.lng >= -180 &&
-            incident.lng <= 180,
+            incident.lng <= 180
         )
         .map((incident) => ({
           id: incident.id,
@@ -183,8 +85,8 @@ export function MapPage() {
       <div className="h-[30vh] shrink-0 bg-bg-secondary">
         <OneMapMultiIncident
           incidents={mappableIncidents}
-          centerLat={mapCenter?.lat}
-          centerLng={mapCenter?.lng}
+          centerLat={userLat ?? undefined}
+          centerLng={userLng ?? undefined}
           zoomLevel={13}
           className="h-full w-full"
         />
@@ -222,21 +124,9 @@ export function MapPage() {
         </div>
 
         {/* List - independently scrollable */}
-        <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 space-y-3 pb-20 pt-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 space-y-3 pb-20 pt-4">
           {filteredIncidents.map((incident) => (
-            <div
-              key={incident.id}
-              ref={(element) => {
-                if (element) {
-                  itemRefs.current.set(incident.id, element);
-                } else {
-                  itemRefs.current.delete(incident.id);
-                }
-              }}
-              data-incident-id={incident.id}
-            >
-              <IncidentCard incident={incident} compact={true} />
-            </div>
+            <IncidentCard key={incident.id} incident={incident} compact={true} />
           ))}
           {filteredIncidents.length === 0 && (
             <div className="py-10 text-center text-text-secondary">No incidents match the selected filters.</div>

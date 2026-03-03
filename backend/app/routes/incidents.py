@@ -10,6 +10,7 @@ from app.agents.pipeline import run_triage_pipeline
 from app.core.database import get_db
 from app.dependencies import get_current_user
 from app.media.media import save_base64_image
+from app.media.media import save_base64_image
 from app.models.media import MediaAsset
 from app.models.triage import FinalTriage, IncidentReport
 from app.models.users import User

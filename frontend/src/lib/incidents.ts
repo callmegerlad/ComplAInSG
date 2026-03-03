@@ -379,8 +379,29 @@ function getCategoryMeta(incidentType: string): IncidentCategory {
   return INCIDENT_CATEGORIES[4];
 }
 
+/**
+ * Parse an ISO datetime string from the backend as UTC.
+ *
+ * FastAPI/SQLAlchemy serialize naive datetime objects without a timezone
+ * suffix (e.g. "2026-03-03T08:00:00"). JavaScript's Date constructor treats
+ * such strings as *local* time, which in UTC+8 shifts the epoch value 8 hours
+ * earlier and inflates any "time ago" calculation by 8 hours.
+ *
+ * We normalise by appending "Z" when no timezone indicator is present so the
+ * value is always interpreted as UTC.
+ */
+function parseUtcDate(isoString: string): Date {
+  if (!isoString) return new Date(Number.NaN);
+  // Already has a timezone indicator? Parse as-is.
+  if (isoString.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(isoString)) {
+    return new Date(isoString);
+  }
+  // Naive string → treat as UTC
+  return new Date(isoString + "Z");
+}
+
 function toTimeGroup(createdAtIso: string): IncidentTimeGroup {
-  const createdAt = new Date(createdAtIso).getTime();
+  const createdAt = parseUtcDate(createdAtIso).getTime();
 
   if (Number.isNaN(createdAt)) {
     return "EARLIER TODAY";
@@ -400,7 +421,7 @@ function toTimeGroup(createdAtIso: string): IncidentTimeGroup {
 }
 
 function formatRelativeTime(createdAtIso: string): string {
-  const createdAt = new Date(createdAtIso).getTime();
+  const createdAt = parseUtcDate(createdAtIso).getTime();
 
   if (Number.isNaN(createdAt)) {
     return "Recent";

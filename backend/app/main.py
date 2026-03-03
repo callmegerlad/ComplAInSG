@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.settings import settings
 from app.routes.incidents import incidents_router
+from app.routes.alerts import alerts_router
 from app.routes.ws_alerts import ws_router
 from app.routes.users import users_router
 from pathlib import Path
@@ -31,6 +32,10 @@ tags_metadata = [
     {
         "name": "ws_alerts",
         "description": "WebSocket endpoint for real-time incident alerts.",
+    },
+    {
+        "name": "alerts",
+        "description": "User alert interaction tracking endpoints.",
     },
 ]
 
@@ -63,5 +68,6 @@ def health():
 
 
 app.include_router(incidents_router)
+app.include_router(alerts_router)
 app.include_router(ws_router)
 app.include_router(users_router)

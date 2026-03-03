@@ -7,6 +7,9 @@ export interface AuthUser {
   created_at: string;
   updated_at: string;
   report_count?: number;
+  alert_response_count?: number;
+  trust_score?: number;
+  badges?: string[];
 }
 
 export interface AuthSession {

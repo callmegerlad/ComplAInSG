@@ -376,7 +376,7 @@ export function ProfilePage() {
       </Drawer>
 
       {/* ── Page body ────────────────────────────────────────────────────── */}
-      <div className="flex flex-col min-h-full pb-8">
+      <div className="flex flex-col min-h-full pb-20">
         <TopBar showSearch={false} />
 
         {/* Header Block */}

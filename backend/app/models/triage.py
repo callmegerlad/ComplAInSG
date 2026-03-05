@@ -173,6 +173,8 @@ class IncidentReport(Base):
 
     status = Column(Enum(ReportStatus),
                     default=ReportStatus.SUBMITTED, index=True)
+    authority_share_consent = Column(Boolean, default=False, nullable=False)
+    authority_share_consented_at = Column(DateTime, nullable=True)
 
     created_at = Column(
         DateTime, default=utcnow, nullable=False, index=True)

@@ -13,6 +13,7 @@ class IncidentRequest(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     accuracy_m: Optional[float] = None
+    authority_share_consent: bool = False
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -32,6 +33,8 @@ class IncidentResponse(BaseModel):
     incident_id: str
     final: dict
     metadata: Optional[dict] = None
+    requires_authority_consent: bool = False
+    authority_share_consent: bool = False
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -100,6 +103,8 @@ class IncidentDetailResponse(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     status: str
+    authority_share_consent: bool = False
+    authority_share_consented_at: Optional[datetime] = None
     reporter_name: str = "Anonymous"
     image_url: Optional[str] = None
     created_at: datetime
@@ -123,7 +128,6 @@ class IncidentListResponse(BaseModel):
             }
         }
     )
-
 
 
 

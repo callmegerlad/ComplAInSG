@@ -22,6 +22,7 @@ from app.schemas.incidents import (
 )
 from app.services.incident_nearby import fetch_nearby_incidents
 from app.services.realtime import router
+from app.utils import utcnow
 
 
 incidents_router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -37,6 +38,9 @@ def severity_radius(sev: str | None) -> int:
         "MEDIUM": 150,
         "LOW": 0,
     }.get((sev or "").upper(), 0)
+
+
+AUTHORITY_ROUTING_TARGETS = {"CALL_999", "CALL_995"}
 
 
 def resolve_reporter_name(incident: IncidentReport) -> str:
@@ -138,6 +142,10 @@ async def triage(
     )
 
     radius = severity_radius(getattr(final, "final_severity", None))
+    requires_authority_consent = (
+        str(getattr(final, "routing_target", "") or "").upper() in AUTHORITY_ROUTING_TARGETS
+    )
+    authority_share_consent = bool(req.authority_share_consent)
 
     incident = IncidentReport(
         id=incident_id,
@@ -146,6 +154,8 @@ async def triage(
         description=req.description,
         latitude=req.lat,
         longitude=req.lng,
+        authority_share_consent=authority_share_consent,
+        authority_share_consented_at=utcnow() if authority_share_consent else None,
     )
     db.add(incident)
     db.commit()
@@ -177,7 +187,7 @@ async def triage(
     db.add(triage_entry)
     db.commit()
 
-    if radius > 0:
+    if radius > 0 and (not requires_authority_consent or authority_share_consent):
         payload = {
             "type": "ALERT",
             "incident_id": incident_id,
@@ -202,7 +212,72 @@ async def triage(
         incident_id=incident_id,
         final=final.model_dump(),
         metadata=metadata.model_dump() if metadata else None,
+        requires_authority_consent=requires_authority_consent,
+        authority_share_consent=authority_share_consent,
     )
+
+
+@incidents_router.post("/{incident_id}/authority-consent")
+async def confirm_authority_consent(
+    incident_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    incident = (
+        db.query(IncidentReport)
+        .options(selectinload(IncidentReport.final_triage))
+        .filter(IncidentReport.id == incident_id)
+        .first()
+    )
+    if not incident:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    if incident.reporter_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed for this incident")
+
+    final = incident.final_triage
+    if final is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incident triage not ready")
+
+    routing_target = str(getattr(final, "routing_target", "") or "").upper()
+    requires_authority_consent = routing_target in AUTHORITY_ROUTING_TARGETS
+
+    if not requires_authority_consent:
+        if not incident.authority_share_consent:
+            incident.authority_share_consent = True
+            incident.authority_share_consented_at = utcnow()
+            db.commit()
+        return {"status": "ok", "authority_share_consent": True, "requires_authority_consent": False}
+
+    if not incident.authority_share_consent:
+        incident.authority_share_consent = True
+        incident.authority_share_consented_at = utcnow()
+        db.commit()
+        db.refresh(incident)
+
+    if incident.latitude is not None and incident.longitude is not None:
+        radius = severity_radius(getattr(final, "final_severity", None))
+        if radius > 0:
+            payload = {
+                "type": "ALERT",
+                "incident_id": incident.id,
+                "location": incident.location_text,
+                "incident_lat": incident.latitude,
+                "incident_lng": incident.longitude,
+                "radius_m": radius,
+                "incident_type": final.incident_type,
+                "severity": final.final_severity,
+                "routing": final.routing_target,
+            }
+            await router.broadcast_alert(
+                incident.id,
+                incident.latitude,
+                incident.longitude,
+                radius,
+                payload,
+            )
+
+    return {"status": "ok", "authority_share_consent": True, "requires_authority_consent": True}
 
 
 @incidents_router.get("/nearby", response_model=NearbyIncidentsResponse)

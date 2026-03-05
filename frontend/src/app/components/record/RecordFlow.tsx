@@ -21,12 +21,33 @@ interface TriageResponse {
   incident_id: string;
   final: FinalTriageOutput;
   metadata: unknown;
+  requires_authority_consent?: boolean;
+  authority_share_consent?: boolean;
 }
 
 // --- Component ----------------------------------------------------------------
 
 interface RecordFlowProps {
   onClose?: () => void;
+}
+
+function isAuthorityRoutingTarget(routingTarget: string | undefined) {
+  const normalized = String(routingTarget ?? "").toUpperCase();
+  return normalized === "CALL_999" || normalized === "CALL_995";
+}
+
+function getApiBaseUrl() {
+  return ((import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000").replace(/\/+$/, "");
+}
+
+function toReadableApiError(error: unknown, apiBase: string, fallback: string) {
+  if (error instanceof TypeError) {
+    return `Cannot reach backend at ${apiBase}. Ensure the API server is running and VITE_API_URL is correct.`;
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return fallback;
 }
 
 export function RecordFlow({ onClose }: RecordFlowProps) {
@@ -42,6 +63,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
   const [followupAnswers, setFollowupAnswers] = useState<Record<number, "yes" | "no" | null>>({});
   const [additionalNote, setAdditionalNote] = useState("");
   const [apiError, setApiError] = useState<string | null>(null);
+  const [shareWithAuthoritiesConsent, setShareWithAuthoritiesConsent] = useState(false);
 
   // Camera refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -111,7 +133,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
     setApiError(null);
     setStep("loading");
     try {
-      const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+      const apiBase = getApiBaseUrl();
       const res = await fetch(`${apiBase}/incidents/triage`, {
         method: "POST",
         headers: {
@@ -125,6 +147,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
           lat: location.lat,
           lng: location.lng,
           accuracy_m: location.accuracy,
+          authority_share_consent: false,
         }),
       });
       if (!res.ok) {
@@ -132,6 +155,7 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
       }
       const data = (await res.json()) as TriageResponse;
       setTriageResult(data);
+      setShareWithAuthoritiesConsent(Boolean(data.authority_share_consent));
       const initialAnswers: Record<number, "yes" | "no" | null> = {};
       data.final.followup_questions.forEach((_, i) => {
         initialAnswers[i] = null;
@@ -139,15 +163,44 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
       setFollowupAnswers(initialAnswers);
       setStep("results");
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      const apiBase = getApiBaseUrl();
+      setApiError(toReadableApiError(err, apiBase, "Something went wrong. Please try again."));
       setStep("confirm");
     }
   };
 
   // -- Final submit ------------------------------------------------------------
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!triageResult) return;
+    const needsAuthorityConsent =
+      triageResult.requires_authority_consent || isAuthorityRoutingTarget(triageResult.final.routing_target);
+
+    if (needsAuthorityConsent && !shareWithAuthoritiesConsent) {
+      setApiError("Please confirm authority sharing consent before submitting this case.");
+      return;
+    }
+
+    if (needsAuthorityConsent && !triageResult.authority_share_consent) {
+      try {
+        const apiBase = getApiBaseUrl();
+        const res = await fetch(`${apiBase}/incidents/${triageResult.incident_id}/authority-consent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
+        });
+        if (!res.ok) {
+          throw new Error(`Unable to confirm authority sharing (${res.status})`);
+        }
+      } catch (err) {
+        const apiBase = getApiBaseUrl();
+        setApiError(toReadableApiError(err, apiBase, "Unable to confirm authority sharing."));
+        return;
+      }
+    }
+
     onClose?.();
     navigate(`/incidents/${triageResult.incident_id}`, {
       state: {
@@ -426,6 +479,8 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
   // STEP: results --------------------------------------------------------------
   if (step === "results" && triageResult) {
     const { final } = triageResult;
+    const needsAuthorityConsent =
+      triageResult.requires_authority_consent || isAuthorityRoutingTarget(final.routing_target);
     return (
       <div className="flex h-full flex-col overflow-y-auto bg-surface-1">
         {/* Header */}
@@ -447,6 +502,12 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
         </div>
 
         <div className="flex flex-col gap-4 p-4">
+          {apiError && (
+            <div className="flex items-center gap-2 rounded-xl bg-danger/10 p-3 text-danger">
+              <span className="material-symbols-outlined text-[18px]">error</span>
+              <span className="text-[13px]">{apiError}</span>
+            </div>
+          )}
           {/* AI Summary */}
           <div className="rounded-2xl border border-border-subtle bg-surface-2 p-4 shadow-card">
             <div className="mb-3 flex items-center justify-between gap-2">
@@ -552,16 +613,34 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
               className="min-h-[80px] w-full rounded-xl border border-border-subtle bg-surface-2 p-3 text-[14px] text-text-primary placeholder:text-text-disabled focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
             />
           </div>
+
+          {needsAuthorityConsent && (
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-3">
+              <input
+                type="checkbox"
+                checked={shareWithAuthoritiesConsent}
+                onChange={(e) => setShareWithAuthoritiesConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border-strong"
+              />
+              <div>
+                <p className="text-[13px] font-semibold text-amber-900">Consent required for authority handoff</p>
+                <p className="text-[12px] text-amber-800">
+                  I permit ComplAInSG to share my report details and photos with police/fire authorities for response.
+                </p>
+              </div>
+            </label>
+          )}
         </div>
 
         {/* Final submit */}
         <div className="mt-auto shrink-0 border-t border-border-subtle p-4 pb-6">
           <button
             type="button"
-            onClick={handleFinalSubmit}
-            className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95"
+            onClick={() => void handleFinalSubmit()}
+            disabled={needsAuthorityConsent && !shareWithAuthoritiesConsent}
+            className="h-12 w-full rounded-full bg-accent-primary text-[15px] font-bold text-white shadow-primary-btn transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Submit Report
+            {needsAuthorityConsent ? "Submit and Share with Authorities" : "Submit Report"}
           </button>
           <p className="mt-2 text-center text-[11px] text-text-secondary">
             Your report will be sent to the relevant authorities
@@ -573,6 +652,3 @@ export function RecordFlow({ onClose }: RecordFlowProps) {
 
   return null;
 }
-
-
-

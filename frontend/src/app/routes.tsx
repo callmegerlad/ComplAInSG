@@ -9,6 +9,7 @@ import { IncidentDetailsPage } from "./pages/IncidentDetails";
 import { SearchPage } from "./pages/Search";
 import { AuthPage } from "./pages/Auth";
 import { RequireAuth, PublicOnlyAuthRoute } from "./components/auth/AuthGuards";
+import { AdminCasesPage } from "./pages/AdminCases";
 
 export const router = createBrowserRouter([
   // /auth is only accessible when NOT signed in
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: "*", Component: () => <div>Not Found</div> },
         ],
       },
+      { path: "/admin/cases", Component: AdminCasesPage },
     ],
   },
 ]);

@@ -153,6 +153,7 @@ type ApiFinalTriage = {
   incident_type?: string | null;
   final_severity?: string | number | null;
   responder_summary?: string | null;
+  routing_target?: string | null;
 };
 
 type ApiIncidentDetail = {
@@ -167,6 +168,8 @@ type ApiIncidentDetail = {
   final_triage?: ApiFinalTriage | null;
   reporter_name?: string | null;
   image_url?: string | null;
+  authority_share_consent?: boolean | null;
+  authority_share_consented_at?: string | null;
 };
 
 type ApiIncidentListResponse = {
@@ -334,10 +337,14 @@ function mapApiIncidentToIncident(
       apiIncident.final_triage?.responder_summary?.trim() ||
       apiIncident.description ||
       "Incident report received.",
+    descriptionFull: apiIncident.description || "",
     timestamp: formatRelativeTime(apiIncident.created_at),
     status: apiIncident.status,
     responders: 0,
     reporter: apiIncident.reporter_name?.trim() || "Anonymous",
+    routingTarget: apiIncident.final_triage?.routing_target ?? undefined,
+    authorityShareConsent: Boolean(apiIncident.authority_share_consent),
+    authorityShareConsentedAt: apiIncident.authority_share_consented_at ?? undefined,
     imageUrl: toAbsoluteMediaUrl(apiIncident.image_url),
     credibilityUpvotes: 0,
     credibilityDownvotes: 0,
@@ -366,9 +373,13 @@ function mapNearbyIncidentToIncident(apiIncident: ApiNearbyIncidentItem): Incide
       apiIncident.responder_summary?.trim() ||
       apiIncident.description ||
       "Incident reported nearby.",
+    descriptionFull: apiIncident.description || "",
     timestamp: createdAt ? formatRelativeTime(createdAt) : "Recent",
     responders: 0,
     reporter: "Anonymous",
+    routingTarget: undefined,
+    authorityShareConsent: undefined,
+    authorityShareConsentedAt: undefined,
     imageUrl: toAbsoluteMediaUrl(apiIncident.image_url),
     credibilityUpvotes: 0,
     credibilityDownvotes: 0,
@@ -569,14 +580,20 @@ async function request<T>(path: string, init: RequestInit = {}) {
   const data = contentType.includes("application/json") ? await response.json() : null;
 
   if (!response.ok) {
-    const detail = typeof data?.detail === "string" ? data.detail : "Incident API request failed.";
+    let detail = "Incident API request failed.";
+    if (typeof data?.detail === "string") {
+      detail = data.detail;
+    } else if (Array.isArray(data?.detail) && data.detail.length > 0) {
+      const first = data.detail[0];
+      if (typeof first?.msg === "string") {
+        detail = first.msg;
+      }
+    }
     throw new Error(detail);
   }
 
   return data as T;
 }
-
-
 
 
 
